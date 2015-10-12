@@ -5,6 +5,9 @@
 #include <algorithm>
 #include <assert.h>
 
+namespace jw_util
+{
+
 template <typename Type, unsigned int dims>
 struct MultiDimGrid
 {
@@ -283,5 +286,7 @@ private:
         new_data += post_pad;
     }
 };
+
+}
 
 #endif // MULTIDIMGRID_H

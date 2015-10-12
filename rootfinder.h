@@ -4,6 +4,9 @@
 #include "funcderivatives.h"
 #include "multidimmatrix.h"
 
+namespace jw_util
+{
+
 namespace
 {
     template <unsigned int size>
@@ -313,5 +316,7 @@ private:
     }
     */
 };
+
+}
 
 #endif // NDIMROOTFINDER_H

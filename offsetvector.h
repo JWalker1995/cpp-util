@@ -3,6 +3,9 @@
 
 #include <deque>
 
+namespace jw_util
+{
+
 template <typename Type>
 class OffsetVector
 {
@@ -39,5 +42,7 @@ protected:
     typename std::deque<Type>::size_type offset;
     std::deque<Type> items;
 };
+
+}
 
 #endif // OFFSETVECTOR_H

@@ -4,6 +4,9 @@
 #include <deque>
 #include <vector>
 
+namespace jw_util
+{
+
 template <typename Type>
 class Pool
 {
@@ -32,5 +35,7 @@ private:
     std::deque<Type> pool;
     std::vector<Type*> freed;
 };
+
+}
 
 #endif // POOL_H

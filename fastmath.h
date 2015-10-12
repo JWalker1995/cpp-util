@@ -7,6 +7,9 @@
 #include <assert.h>
 #include <type_traits>
 
+namespace jw_util
+{
+
 class FastMath
 {
 public:
@@ -245,5 +248,7 @@ btScalar fastsqrt(btScalar y)
     return x*y;
 }
 */
+
+}
 
 #endif // FASTMATH_H

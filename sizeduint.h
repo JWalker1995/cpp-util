@@ -5,6 +5,9 @@
 #include <type_traits>
 #include <array>
 
+namespace jw_util
+{
+
 template <unsigned int bits>
 class SizedUInt
 {
@@ -183,5 +186,7 @@ private:
         }
     }
 };
+
+}
 
 #endif // SIZEDUINT_H

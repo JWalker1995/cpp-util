@@ -4,6 +4,9 @@
 #include <set>
 #include <assert.h>
 
+namespace jw_util
+{
+
 template <typename Type>
 class IntervalSet
 {
@@ -129,5 +132,7 @@ protected:
     Set::iterator last;
 #endif
 };
+
+}
 
 #endif // INTERVALSET_H

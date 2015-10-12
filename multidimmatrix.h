@@ -11,6 +11,9 @@
 #include <cstdlib>
 #endif
 
+namespace jw_util
+{
+
 namespace
 {
     enum Operator {
@@ -149,5 +152,7 @@ private:
         }
     }
 };
+
+}
 
 #endif // MULTIDIMMATRIX_H

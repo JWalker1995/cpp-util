@@ -6,6 +6,9 @@
 #include "multidimmatrix.h"
 #include "fastmath.h"
 
+namespace jw_util
+{
+
 class _FuncDerivatiesBaseEmpty {};
 
 template <unsigned int vars, unsigned int derivatives, typename BaseType = float>
@@ -38,5 +41,7 @@ public:
 private:
     MultiDimMatrix<vars, derivatives, BaseType> matrix;
 };
+
+}
 
 #endif // FUNCDERIVATIVES_H

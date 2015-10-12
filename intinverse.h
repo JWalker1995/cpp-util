@@ -5,6 +5,9 @@
 #include <array>
 #include <type_traits>
 
+namespace jw_util
+{
+
 template <typename ResultType, unsigned int max>
 class IntInverse
 {
@@ -35,5 +38,7 @@ private:
 
 template <typename ResultType, unsigned int max>
 const std::array<ResultType, max> IntInverse<ResultType, max>::int_inverses = IntInverse<ResultType, max>::calc_int_inverses();
+
+}
 
 #endif // INTINVERSE_H

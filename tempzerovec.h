@@ -3,6 +3,9 @@
 
 #include <vector>
 
+namespace jw_util
+{
+
 template <typename DataType>
 class TempZeroVec
 {
@@ -71,5 +74,6 @@ template <typename DataType>
 bool TempZeroVec<DataType>::locked = false;
 #endif
 
+}
 
 #endif // TEMPZEROVEC_H

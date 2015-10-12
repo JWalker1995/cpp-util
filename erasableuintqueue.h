@@ -5,6 +5,9 @@
 #include <vector>
 #include <list>
 
+namespace jw_util
+{
+
 template <typename Type>
 class ErasableUIntQueue
 {
@@ -106,5 +109,7 @@ private:
     // The actual fifo queue
     std::list<Type> list;
 };
+
+}
 
 #endif // ERASABLEUINTQUEUE_H

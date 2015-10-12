@@ -3,6 +3,9 @@
 
 #include <assert.h>
 
+namespace jw_util
+{
+
 template <typename... ArgTypes>
 class MethodCallback
 {
@@ -54,5 +57,7 @@ private:
     void *inst_ptr;
     StubType stub_ptr;
 };
+
+}
 
 #endif // METHODCALLBACK_H

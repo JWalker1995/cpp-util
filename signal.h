@@ -4,6 +4,9 @@
 #include <assert.h>
 #include <vector>
 
+namespace jw_util
+{
+
 /*
 Fast insertion (listen) and calling
 Slow removal (ignore)
@@ -129,5 +132,7 @@ private:
     bool destructed = false;
 #endif
 };
+
+}
 
 #endif // SIGNAL_H

@@ -7,6 +7,9 @@
 
 #include "signal.h"
 
+namespace jw_util
+{
+
 template <unsigned int filter_arg, typename... ArgTypes>
 class SignalRouter {};
 
@@ -166,5 +169,7 @@ private:
 
     SignalType &signal;
 };
+
+}
 
 #endif // SIGNALROUTER_H
