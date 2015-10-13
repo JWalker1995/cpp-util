@@ -52,7 +52,7 @@ public:
 
     bool has_listeners() const {return !listeners.empty();}
 
-    void operator()(ArgTypes... args) const
+    void call(ArgTypes... args) const
     {
         typename std::vector<Listener>::const_iterator i = listeners.cbegin();
         while (i != listeners.cend())
