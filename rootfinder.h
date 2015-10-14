@@ -4,17 +4,14 @@
 #include "funcderivatives.h"
 #include "multidimmatrix.h"
 
-namespace jw_util
-{
-
 namespace
 {
     template <unsigned int size>
-    float determinant(const MultiDimMatrix<size, 2> &mat)
+    float determinant(const jw_util::MultiDimMatrix<size, 2> &mat)
     {
         float res = 0.0f;
 
-        MultiDimMatrix<size-1, 2> minor;
+        jw_util::MultiDimMatrix<size-1, 2> minor;
         for (unsigned int i = 1; i < size; i++)
         {
             for (unsigned int j = 1; j < size; j++)
@@ -48,22 +45,24 @@ namespace
     }
 
     template <>
-    float determinant<0>(const MultiDimMatrix<0, 2> &mat)
+    float determinant<0>(const jw_util::MultiDimMatrix<0, 2> &mat)
     {
         return 0.0f;
     }
     template <>
-    float determinant<1>(const MultiDimMatrix<1, 2> &mat)
+    float determinant<1>(const jw_util::MultiDimMatrix<1, 2> &mat)
     {
         return mat[0][0];
     }
     template <>
-    float determinant<2>(const MultiDimMatrix<2, 2> &mat)
+    float determinant<2>(const jw_util::MultiDimMatrix<2, 2> &mat)
     {
         return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0];
     }
 }
 
+namespace jw_util
+{
 
 template <unsigned int dims>
 class RootFinder

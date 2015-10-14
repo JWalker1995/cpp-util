@@ -13,6 +13,9 @@ Slow removal (ignore)
 No guarantee on listener call order
 */
 
+template <unsigned int filter_arg, typename... ArgTypes>
+class SignalRouter;
+
 template <typename... ArgTypes>
 class Signal
 {

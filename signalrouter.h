@@ -11,9 +11,6 @@ namespace jw_util
 {
 
 template <unsigned int filter_arg, typename... ArgTypes>
-class SignalRouter {};
-
-template <unsigned int filter_arg, typename... ArgTypes>
 class SignalRouter<filter_arg, Signal<ArgTypes...>>
 {
 private:
