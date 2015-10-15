@@ -1,12 +1,18 @@
 #ifndef STACKBASEDVECTOR_H
 #define STACKBASEDVECTOR_H
 
+#include <vector>
+
 // http://stackoverflow.com/questions/354442/looking-for-c-stl-like-vector-class-but-using-stack-storage
 // http://stackoverflow.com/questions/8049657/stack-buffer-based-stl-allocator
 
 namespace jw_util
 {
 
+template <typename DataType, std::size_t stack_size>
+using StackBasedVector = std::vector<DataType>;
+
+/*
 template <typename Type, std::size_t stack_size>
 class StackBasedVector
 {
@@ -77,6 +83,7 @@ private:
 	std::array<Type, stack_size> stack;
 	Type *heap;
 };
+*/
 
 }
 
