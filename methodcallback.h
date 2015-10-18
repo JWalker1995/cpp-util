@@ -2,6 +2,7 @@
 #define METHODCALLBACK_H
 
 #include <assert.h>
+#include <utility>
 
 namespace jw_util
 {
@@ -22,7 +23,7 @@ public:
         return MethodCallback(static_cast<void*>(inst), &method_stub<ClassType, Method>);
     }
 
-    void operator()(ArgTypes... args) const
+    void call(ArgTypes... args) const
     {
         assert(inst_ptr);
         (*stub_ptr)(inst_ptr, std::forward<ArgTypes>(args)...);
