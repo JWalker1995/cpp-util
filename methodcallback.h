@@ -11,6 +11,10 @@ template <typename... ArgTypes>
 class MethodCallback
 {
 public:
+    MethodCallback()
+        : inst_ptr(0)
+    {}
+
     template <void (*Function)(ArgTypes...)>
     static MethodCallback<ArgTypes...> create()
     {
@@ -31,10 +35,6 @@ public:
 
 private:
     typedef void (*StubType)(void *inst_ptr, ArgTypes...);
-
-    MethodCallback()
-        : inst_ptr(0)
-    {}
 
     MethodCallback(void *inst_ptr, StubType stub_ptr)
         : inst_ptr(inst_ptr)
