@@ -12,7 +12,7 @@ class MethodCallback
 {
 public:
     MethodCallback()
-        : inst_ptr(0)
+        : stub_ptr(0)
     {}
 
     template <void (*Function)(ArgTypes...)>
@@ -27,9 +27,14 @@ public:
         return MethodCallback(static_cast<void*>(inst), &method_stub<ClassType, Method>);
     }
 
+    bool is_valid() const
+    {
+        return stub_ptr;
+    }
+
     void call(ArgTypes... args) const
     {
-        assert(inst_ptr);
+        assert(stub_ptr);
         (*stub_ptr)(inst_ptr, std::forward<ArgTypes>(args)...);
     }
 
