@@ -1,6 +1,7 @@
 #ifndef ERASABLEUINTQUEUE_H
 #define ERASABLEUINTQUEUE_H
 
+#include <assert.h>
 #include <type_traits>
 #include <vector>
 #include <list>
