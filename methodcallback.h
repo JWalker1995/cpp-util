@@ -15,6 +15,11 @@ public:
         : stub_ptr(0)
     {}
 
+    static MethodCallback<ArgTypes...> create_dummy()
+    {
+        return MethodCallback(static_cast<void*>(0), &dummy_stub);
+    }
+
     template <void (*Function)(ArgTypes...)>
     static MethodCallback<ArgTypes...> create()
     {
@@ -45,6 +50,8 @@ private:
         : inst_ptr(inst_ptr)
         , stub_ptr(stub_ptr)
     {}
+
+    static void dummy_stub(void *, ArgTypes...) {}
 
     template <void (*Function)(ArgTypes...)>
     static void function_stub(void *inst_ptr, ArgTypes... args)
