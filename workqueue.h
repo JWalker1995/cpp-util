@@ -19,20 +19,16 @@ class WorkQueue
 public:
     WorkQueue(jw_util::MethodCallback<ArgTypes...> worker)
         : worker(worker)
+        , running(false)
     {
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i] = std::thread(&WorkQueue<num_threads, ArgTypes...>::loop, this);
-        }
+        resume();
     }
 
     ~WorkQueue()
     {
-        shut_down();
-
-        for (unsigned int i = 0; i < num_threads; i++)
+        if (running)
         {
-            threads[i].join();
+            pause();
         }
     }
 
@@ -55,16 +51,32 @@ public:
         }
     }
 
-    void shut_down()
+    void pause()
     {
-        if (running)
-        {
-            running = false;
+        assert(running);
 
-            if (num_threads)
-            {
-                conditional_variable.notify_all();
-            }
+        running = false;
+
+        if (num_threads)
+        {
+            conditional_variable.notify_all();
+        }
+
+        for (unsigned int i = 0; i < num_threads; i++)
+        {
+            threads[i].join();
+        }
+    }
+
+    void resume()
+    {
+        assert(!running);
+
+        running = true;
+
+        for (unsigned int i = 0; i < num_threads; i++)
+        {
+            threads[i] = std::thread(&WorkQueue<num_threads, ArgTypes...>::loop, this);
         }
     }
 
@@ -80,7 +92,7 @@ private:
 
     std::queue<TupleType> queue;
 
-    bool running = true;
+    bool running;
 
     void loop()
     {
