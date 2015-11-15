@@ -17,12 +17,20 @@ template <unsigned int num_threads, typename... ArgTypes>
 class WorkQueue
 {
 public:
+    struct construct_paused_t {};
+    static constexpr construct_paused_t construct_paused {};
+
     WorkQueue(jw_util::MethodCallback<ArgTypes...> worker)
         : worker(worker)
         , running(false)
     {
-        resume();
+        start();
     }
+
+    WorkQueue(jw_util::MethodCallback<ArgTypes...> worker, construct_paused_t)
+        : worker(worker)
+        , running(false)
+    {}
 
     ~WorkQueue()
     {
@@ -51,6 +59,18 @@ public:
         }
     }
 
+    void start()
+    {
+        assert(!running);
+
+        running = true;
+
+        for (unsigned int i = 0; i < num_threads; i++)
+        {
+            threads[i] = std::thread(&WorkQueue<num_threads, ArgTypes...>::loop, this);
+        }
+    }
+
     void pause()
     {
         assert(running);
@@ -65,18 +85,6 @@ public:
         for (unsigned int i = 0; i < num_threads; i++)
         {
             threads[i].join();
-        }
-    }
-
-    void resume()
-    {
-        assert(!running);
-
-        running = true;
-
-        for (unsigned int i = 0; i < num_threads; i++)
-        {
-            threads[i] = std::thread(&WorkQueue<num_threads, ArgTypes...>::loop, this);
         }
     }
 
