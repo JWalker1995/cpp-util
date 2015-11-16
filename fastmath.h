@@ -1,5 +1,5 @@
-#ifndef FASTMATH_H
-#define FASTMATH_H
+#ifndef JWUTIL_FASTMATH_H
+#define JWUTIL_FASTMATH_H
 
 #include "intinverse.h"
 
@@ -251,4 +251,4 @@ btScalar fastsqrt(btScalar y)
 
 }
 
-#endif // FASTMATH_H
+#endif // JWUTIL_FASTMATH_H

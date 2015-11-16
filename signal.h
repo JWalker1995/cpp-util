@@ -1,5 +1,5 @@
-#ifndef SIGNAL_H
-#define SIGNAL_H
+#ifndef JWUTIL_SIGNAL_H
+#define JWUTIL_SIGNAL_H
 
 #include <assert.h>
 #include <vector>
@@ -138,4 +138,4 @@ private:
 
 }
 
-#endif // SIGNAL_H
+#endif // JWUTIL_SIGNAL_H

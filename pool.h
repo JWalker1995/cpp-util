@@ -1,5 +1,5 @@
-#ifndef POOL_H
-#define POOL_H
+#ifndef JWUTIL_POOL_H
+#define JWUTIL_POOL_H
 
 #include <deque>
 #include <vector>
@@ -38,4 +38,4 @@ private:
 
 }
 
-#endif // POOL_H
+#endif // JWUTIL_POOL_H

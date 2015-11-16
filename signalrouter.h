@@ -1,5 +1,5 @@
-#ifndef SIGNALROUTER_H
-#define SIGNALROUTER_H
+#ifndef JWUTIL_SIGNALROUTER_H
+#define JWUTIL_SIGNALROUTER_H
 
 #include <assert.h>
 #include <vector>
@@ -169,4 +169,4 @@ private:
 
 }
 
-#endif // SIGNALROUTER_H
+#endif // JWUTIL_SIGNALROUTER_H

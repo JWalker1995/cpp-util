@@ -1,5 +1,5 @@
-#ifndef INTERVALSET_H
-#define INTERVALSET_H
+#ifndef JWUTIL_INTERVALSET_H
+#define JWUTIL_INTERVALSET_H
 
 #include <set>
 #include <assert.h>
@@ -135,4 +135,4 @@ protected:
 
 }
 
-#endif // INTERVALSET_H
+#endif // JWUTIL_INTERVALSET_H

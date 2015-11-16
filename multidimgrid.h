@@ -1,5 +1,5 @@
-#ifndef MULTIDIMGRID_H
-#define MULTIDIMGRID_H
+#ifndef JWUTIL_MULTIDIMGRID_H
+#define JWUTIL_MULTIDIMGRID_H
 
 #include <array>
 #include <algorithm>
@@ -289,4 +289,4 @@ private:
 
 }
 
-#endif // MULTIDIMGRID_H
+#endif // JWUTIL_MULTIDIMGRID_H

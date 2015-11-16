@@ -1,5 +1,5 @@
-#ifndef WORKQUEUE_H
-#define WORKQUEUE_H
+#ifndef JWUTIL_WORKQUEUE_H
+#define JWUTIL_WORKQUEUE_H
 
 #include <array>
 #include <tuple>
@@ -140,4 +140,4 @@ private:
 
 }
 
-#endif // WORKQUEUE_H
+#endif // JWUTIL_WORKQUEUE_H

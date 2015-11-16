@@ -1,5 +1,5 @@
-#ifndef STACKBASEDVECTOR_H
-#define STACKBASEDVECTOR_H
+#ifndef JWUTIL_STACKBASEDVECTOR_H
+#define JWUTIL_STACKBASEDVECTOR_H
 
 #include <vector>
 
@@ -87,4 +87,4 @@ private:
 
 }
 
-#endif // STACKBASEDVECTOR_H
+#endif // JWUTIL_STACKBASEDVECTOR_H

@@ -1,5 +1,5 @@
-#ifndef INTINVERSE_H
-#define INTINVERSE_H
+#ifndef JWUTIL_INTINVERSE_H
+#define JWUTIL_INTINVERSE_H
 
 #include <assert.h>
 #include <array>
@@ -41,4 +41,4 @@ const std::array<ResultType, max> IntInverse<ResultType, max>::int_inverses = In
 
 }
 
-#endif // INTINVERSE_H
+#endif // JWUTIL_INTINVERSE_H

@@ -1,5 +1,5 @@
-#ifndef MULTIDIMMATRIX_H
-#define MULTIDIMMATRIX_H
+#ifndef JWUTIL_MULTIDIMMATRIX_H
+#define JWUTIL_MULTIDIMMATRIX_H
 
 #include <assert.h>
 #include <type_traits>
@@ -155,4 +155,4 @@ private:
 
 }
 
-#endif // MULTIDIMMATRIX_H
+#endif // JWUTIL_MULTIDIMMATRIX_H

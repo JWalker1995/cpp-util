@@ -1,5 +1,5 @@
-#ifndef METHODCALLBACK_H
-#define METHODCALLBACK_H
+#ifndef JWUTIL_METHODCALLBACK_H
+#define JWUTIL_METHODCALLBACK_H
 
 #include <assert.h>
 #include <utility>
@@ -73,4 +73,4 @@ private:
 
 }
 
-#endif // METHODCALLBACK_H
+#endif // JWUTIL_METHODCALLBACK_H

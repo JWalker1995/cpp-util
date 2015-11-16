@@ -1,5 +1,5 @@
-#ifndef NDIMROOTFINDER_H
-#define NDIMROOTFINDER_H
+#ifndef JWUTIL_ROOTFINDER_H
+#define JWUTIL_ROOTFINDER_H
 
 #include "funcderivatives.h"
 #include "multidimmatrix.h"
@@ -318,4 +318,4 @@ private:
 
 }
 
-#endif // NDIMROOTFINDER_H
+#endif // JWUTIL_ROOTFINDER_H

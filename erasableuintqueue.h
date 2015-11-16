@@ -1,5 +1,5 @@
-#ifndef ERASABLEUINTQUEUE_H
-#define ERASABLEUINTQUEUE_H
+#ifndef JWUTIL_ERASABLEUINTQUEUE_H
+#define JWUTIL_ERASABLEUINTQUEUE_H
 
 #include <assert.h>
 #include <type_traits>
@@ -113,4 +113,4 @@ private:
 
 }
 
-#endif // ERASABLEUINTQUEUE_H
+#endif // JWUTIL_ERASABLEUINTQUEUE_H

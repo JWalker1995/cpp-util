@@ -1,5 +1,5 @@
-#ifndef OFFSETVECTOR_H
-#define OFFSETVECTOR_H
+#ifndef JWUTIL_OFFSETVECTOR_H
+#define JWUTIL_OFFSETVECTOR_H
 
 #include <deque>
 
@@ -45,4 +45,4 @@ protected:
 
 }
 
-#endif // OFFSETVECTOR_H
+#endif // JWUTIL_OFFSETVECTOR_H

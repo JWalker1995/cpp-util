@@ -1,5 +1,5 @@
-#ifndef TEMPZEROVEC_H
-#define TEMPZEROVEC_H
+#ifndef JWUTIL_TEMPZEROVEC_H
+#define JWUTIL_TEMPZEROVEC_H
 
 #include <vector>
 
@@ -76,4 +76,4 @@ bool TempZeroVec<DataType>::locked = false;
 
 }
 
-#endif // TEMPZEROVEC_H
+#endif // JWUTIL_TEMPZEROVEC_H

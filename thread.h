@@ -1,5 +1,5 @@
-#ifndef THREAD_H
-#define THREAD_H
+#ifndef JWUTIL_THREAD_H
+#define JWUTIL_THREAD_H
 
 #include <thread>
 #include <assert.h>
@@ -52,4 +52,4 @@ private:
 
 }
 
-#endif // THREAD_H
+#endif // JWUTIL_THREAD_H

@@ -1,5 +1,5 @@
-#ifndef SIZEDUINT_H
-#define SIZEDUINT_H
+#ifndef JWUTIL_SIZEDUINT_H
+#define JWUTIL_SIZEDUINT_H
 
 #include <limits.h>
 #include <type_traits>
@@ -189,4 +189,4 @@ private:
 
 }
 
-#endif // SIZEDUINT_H
+#endif // JWUTIL_SIZEDUINT_H

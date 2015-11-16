@@ -1,5 +1,5 @@
-#ifndef FUNCDERIVATIVES_H
-#define FUNCDERIVATIVES_H
+#ifndef JWUTIL_FUNCDERIVATIVES_H
+#define JWUTIL_FUNCDERIVATIVES_H
 
 #include <type_traits>
 
@@ -44,4 +44,4 @@ private:
 
 }
 
-#endif // FUNCDERIVATIVES_H
+#endif // JWUTIL_FUNCDERIVATIVES_H
