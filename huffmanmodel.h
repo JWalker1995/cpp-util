@@ -18,7 +18,7 @@ public:
     class Builder
     {
     public:
-        void add_output(unsigned int value, unsigned int freq)
+        void add_output(unsigned int value, std::uint64_t freq)
         {
             nodes.push(new Node(freq, value));
         }
@@ -35,7 +35,12 @@ public:
                 const Node *second = nodes.top();
                 nodes.pop();
 
-                unsigned int freq_sum = first->freq + second->freq;
+                std::uint64_t freq_sum = first->freq + second->freq;
+
+                // Catch possible overflow
+                assert(freq_sum >= first->freq);
+                assert(freq_sum >= second->freq);
+
                 nodes.push(new Node(freq_sum, first, second));
             }
 
@@ -50,18 +55,18 @@ public:
     private:
         struct Node
         {
-            Node(unsigned int freq, unsigned int value)
+            Node(std::uint64_t freq, unsigned int value)
                 : freq(freq)
                 , value(value)
                 , children{0, 0}
             {}
 
-            Node(unsigned int freq, const Node *child1, const Node *child2)
+            Node(std::uint64_t freq, const Node *child1, const Node *child2)
                 : freq(freq)
                 , children{child1, child2}
             {}
 
-            unsigned int freq;
+            std::uint64_t freq;
             unsigned int value;
             const Node *children[2];
 
