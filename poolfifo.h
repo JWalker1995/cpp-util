@@ -22,7 +22,7 @@ public:
         return *alloc_cur++;
     }
 
-    void free(Type &type)
+    void free(const Type &type)
     {
         if (free_cur)
         {
@@ -30,7 +30,7 @@ public:
             free_cur++;
             if (free_cur == free_end)
             {
-                Type *free_start = free_end - alloc_size;
+                const Type *free_start = free_end - alloc_size;
                 delete[] free_start;
                 free_cur = 0;
             }
@@ -49,8 +49,8 @@ private:
     Type *alloc_cur = 0;
     Type *alloc_end = 0;
 
-    Type *free_cur = 0;
-    Type *free_end;
+    const Type *free_cur = 0;
+    const Type *free_end;
 };
 
 }
