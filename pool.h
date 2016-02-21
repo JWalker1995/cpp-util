@@ -26,9 +26,9 @@ public:
         }
     }
 
-    void free(Type &type)
+    void free(const Type &type)
     {
-        freed.push_back(&type);
+        freed.push_back(const_cast<Type*>(&type));
     }
 
 private:
