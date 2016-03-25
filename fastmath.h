@@ -77,6 +77,8 @@ public:
         {
             static_assert(std::is_unsigned<T>::value, "Cannot call FastMath::log2 with a signed integer argument");
 
+            assert(num > 0);
+
             signed int res = 0;
             while (num >>= 1) {res++;}
             return res;
