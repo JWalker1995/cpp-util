@@ -26,30 +26,22 @@ public:
 
         // Implementation taken from wikipedia: http://en.wikipedia.org/wiki/Methods_of_computing_square_roots
 
-        int val_int = *(int*) &x; /* Same bits, but as an int */
         /*
-        * To justify the following code, prove that
-        *
-        * ((((val_int / 2^m) - b) / 2) + b) * 2^m = ((val_int - 2^m) / 2) + ((b + 1) / 2) * 2^m)
-        *
-        * where
-        *
-        * b = exponent bias
-        * m = number of mantissa bits
-        *
-        * .
-        */
+        unsigned int val_int = *reinterpret_cast<unsigned int*>(&x);
 
-        val_int -= 1 << 23; /* Subtract 2^m. */
-        val_int >>= 1; /* Divide by 2. */
-        val_int += 1 << 29; /* Add ((b + 1) / 2) * 2^m. */
+        val_int -= 1 << 23; // Subtract 2^m
+        val_int >>= 1; // Divide by 2
+        val_int += 1 << 29; // Add ((b + 1) / 2) * 2^m
 
-        float y = *(float*) &val_int; /* Interpret again as float */
+        float y = *reinterpret_cast<float*>(&val_int);
 
         for (unsigned int i = 0; i < Iterations; i++)
         {
             y = (y + x / y) / 2.0;
         }
+
+        return y;
+        */
 
         /*
         The maximum errors where x < 1000.0 are around 511.99:
@@ -64,8 +56,6 @@ public:
         Iterations=2 -> 0.000003428
         Iterations=3 -> 0.000000510
         */
-
-        return y;
     }
 
     template <typename T>
@@ -76,8 +66,6 @@ public:
         if (std::is_integral<T>::value)
         {
             static_assert(std::is_unsigned<T>::value, "Cannot call FastMath::log2 with a signed integer argument");
-
-            assert(num > 0);
 
             signed int res = 0;
             while (num >>= 1) {res++;}
