@@ -22,10 +22,7 @@ public:
 
     ~MultiDimGrid()
     {
-        if (data)
-        {
-            delete[] data;
-        }
+        delete[] data;
     }
 
     template <typename Point>

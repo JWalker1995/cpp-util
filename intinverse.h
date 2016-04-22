@@ -30,7 +30,7 @@ private:
         std::array<ResultType, max> res;
         for (unsigned int i = 0; i < max; i++)
         {
-            res[i] = static_cast<ResultType>(1.0) / i;
+            res[i] = static_cast<ResultType>(1) / i;
         }
         return res;
     }
