@@ -11,6 +11,8 @@
 namespace jw_util
 {
 
+static constexpr unsigned int HuffmanModelDynamic = static_cast<unsigned int>(-1);
+
 template <unsigned int outputs>
 class HuffmanModel
 {
@@ -25,7 +27,8 @@ public:
 
         void compile(HuffmanModel &model)
         {
-            assert(nodes.size() == outputs);
+            alloc_data(model.read_tree, nodes.size() * 2 - 1);
+            alloc_data(model.write_list, nodes.size());
 
             while (nodes.size() >= 2)
             {
@@ -46,10 +49,16 @@ public:
 
             unsigned int read_tree_pos = 0;
             descend(model, read_tree_pos, 0, 0, nodes.top());
-            assert(read_tree_pos == model.read_tree.size());
+            assert_at_end(model.read_tree, read_tree_pos);
 
             nodes.pop();
             assert(nodes.empty());
+        }
+
+        static void decompile(HuffmanModel &model)
+        {
+            free_data(model.read_tree);
+            free_data(model.write_list);
         }
 
     private:
@@ -84,12 +93,14 @@ public:
         static void descend(HuffmanModel &model, unsigned int &read_tree_pos, unsigned int path, unsigned int path_bits, const Node *node)
         {
             unsigned int prev_read_tree_pos = read_tree_pos;
-            assert(prev_read_tree_pos < model.read_tree.size());
+            assert_inside(model.read_tree, prev_read_tree_pos);
             read_tree_pos++;
 
             if (node->children[0])
             {
                 // Branch
+                assert(node->children[1]);
+
                 descend(model, read_tree_pos, path | (0 << path_bits), path_bits + 1, node->children[0]);
                 model.read_tree[prev_read_tree_pos] = read_tree_pos - prev_read_tree_pos;
                 descend(model, read_tree_pos, path | (1 << path_bits), path_bits + 1, node->children[1]);
@@ -97,8 +108,10 @@ public:
             else
             {
                 // Leaf
-                assert(node->value < model.write_list.size());
+                assert(!node->children[1]);
+                assert_inside(model.write_list, node->value);
                 assert(path_bits < sizeof(unsigned int) * CHAR_BIT);
+
                 model.read_tree[prev_read_tree_pos] = -node->value;
                 model.write_list[node->value] = path | (1 << path_bits);
             }
@@ -114,7 +127,7 @@ public:
         {}
 
         Reader(const HuffmanModel &model)
-            : ptr(model.read_tree.data())
+            : ptr(get_data(model.read_tree))
         {}
 
         bool needs_bit() const
@@ -180,8 +193,35 @@ public:
     };
 
 private:
-    std::array<signed int, outputs * 2 - 1> read_tree;
-    std::array<unsigned int, outputs> write_list;
+    typedef typename std::conditional<outputs == HuffmanModelDynamic, signed int*, std::array<signed int, outputs * 2 - 1>>::type ReadTreeType;
+    typedef typename std::conditional<outputs == HuffmanModelDynamic, unsigned int*, std::array<unsigned int, outputs>>::type WriteListType;
+    ReadTreeType read_tree;
+    WriteListType write_list;
+
+    template <typename DataType>
+    static void alloc_data(DataType *&res, unsigned int count) {res = new DataType[count];}
+    template <typename DataType, std::size_t size>
+    static void alloc_data(std::array<DataType, size> &res, unsigned int count) {assert(count == size);}
+
+    template <typename DataType>
+    static DataType *get_data(DataType *res) {return res;}
+    template <typename DataType, std::size_t size>
+    static DataType *get_data(std::array<DataType, size> &res) {return res.data();}
+
+    template <typename DataType>
+    static void free_data(DataType *res) {delete[] res;}
+    template <typename DataType, std::size_t size>
+    static void free_data(std::array<DataType, size> &res) {}
+
+    template <typename DataType>
+    static void assert_inside(DataType *res, unsigned int index) {}
+    template <typename DataType, std::size_t size>
+    static void assert_inside(std::array<DataType, size> &res, unsigned int index) {assert(index < size);}
+
+    template <typename DataType>
+    static void assert_at_end(DataType *res, unsigned int index) {}
+    template <typename DataType, std::size_t size>
+    static void assert_at_end(std::array<DataType, size> &res, unsigned int index) {assert(index == size);}
 };
 
 }
