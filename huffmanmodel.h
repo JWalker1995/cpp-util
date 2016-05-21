@@ -83,7 +83,10 @@ public:
             {
                 bool operator() (const Node *a, const Node *b) const
                 {
-                    return a->freq > b->freq;
+                    assert(a->value != b->value);
+
+                    if (a->freq != b->freq) {return a->freq > b->freq;}
+                    else {return a->value > b->value;}
                 }
             };
         };
