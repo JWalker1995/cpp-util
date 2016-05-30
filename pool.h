@@ -7,7 +7,7 @@
 namespace jw_util
 {
 
-template <typename Type>
+template <typename Type, bool shrink = false>
 class Pool
 {
 public:
@@ -28,8 +28,17 @@ public:
 
     void free(const Type &type)
     {
-        freed.push_back(const_cast<Type*>(&type));
+        if (shrink && &type == &pool.back())
+        {
+            pool.pop_back();
+        }
+        else
+        {
+            freed.push_back(const_cast<Type*>(&type));
+        }
     }
+
+    std::deque<Type> &get_data() {return pool;}
 
 private:
     std::deque<Type> pool;
