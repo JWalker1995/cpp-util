@@ -182,7 +182,7 @@ public:
             path >>= 1;
         }
 
-        unsigned int bits_left() const
+        unsigned int num_bits_left() const
         {
             return FastMath::log2(path);
         }

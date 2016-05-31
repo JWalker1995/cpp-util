@@ -6,13 +6,14 @@
 namespace jw_util
 {
 
+template <typename DataType = unsigned int>
 class BitInterface
 {
 public:
     BitInterface()
     {}
 
-    BitInterface(unsigned int *data)
+    BitInterface(DataType *data)
         : data(data)
         , cur_bit(0)
     {}
@@ -90,22 +91,22 @@ public:
         cur_bit++;
     }
 
-    unsigned int get_element_size(const unsigned int *start) const
+    unsigned int get_element_size(const DataType *start) const
     {
         return data - start + (cur_bit ? 1 : 0);
     }
-    unsigned int get_bit_size(const unsigned int *start) const
+    unsigned int get_bit_size(const DataType *start) const
     {
-        return (data - start) * (sizeof(unsigned int) * CHAR_BIT) + cur_bit;
+        return (data - start) * (sizeof(DataType) * CHAR_BIT) + cur_bit;
     }
 
 private:
-    unsigned int *data;
+    DataType *data;
     unsigned int cur_bit;
 
     void load_word()
     {
-        if (cur_bit == sizeof(unsigned int) * CHAR_BIT)
+        if (cur_bit == sizeof(DataType) * CHAR_BIT)
         {
             data++;
             cur_bit = 0;
