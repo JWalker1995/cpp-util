@@ -27,6 +27,7 @@ public:
 
         void compile(HuffmanModel &model)
         {
+            assert(!nodes.empty());
             alloc_data(model.read_tree, nodes.size() * 2 - 1);
             alloc_data(model.write_list, nodes.size());
 
