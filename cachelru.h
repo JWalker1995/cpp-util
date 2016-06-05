@@ -1,7 +1,6 @@
 #ifndef JWUTIL_CACHELRU_H
 #define JWUTIL_CACHELRU_H
 
-#include <deque>
 #include <unordered_map>
 #include <assert.h>
 
@@ -11,16 +10,34 @@ namespace jw_util
 template <typename KeyType, typename ValueType, unsigned int num_buckets, typename Hasher = std::hash<KeyType>>
 class CacheLRU
 {
+private:
+    struct ForgetNode;
+
 public:
     CacheLRU()
         : map(num_buckets)
     {
         map.max_load_factor(1.0f);
+
+        forget_pool = new ForgetNode[num_buckets];
+        forget_pool_back = forget_pool;
     }
 
-    struct Result
+    ~CacheLRU()
     {
-        ValueType *value;
+        delete[] forget_pool;
+    }
+
+    class Result
+    {
+        friend class CacheLRU;
+
+    public:
+        ValueType *get_value() const {return &bucket->first;}
+        bool is_valid() const {return valid;}
+
+    private:
+        std::pair<ValueType, ForgetNode *> *bucket;
         bool valid;
     };
 
@@ -38,7 +55,7 @@ public:
         std::pair<typename MapType::iterator, bool> element = map.insert(std::move(insert));
 
         Result res;
-        res.value = &element.first->second.first;
+        res.bucket = &element.first->second;
         res.valid = !element.second;
 
         ForgetNode *node;
@@ -60,8 +77,26 @@ public:
         return res;
     }
 
+    unsigned int get_bucket_id(const Result &result) const
+    {
+        assert(result.bucket->second >= forget_pool);
+        assert(result.bucket->second < forget_pool_back);
+
+        unsigned int res = result.bucket->second - forget_pool;
+        assert(res < num_buckets);
+        return res;
+    }
+
+    const KeyType &lookup_bucket(unsigned int id) const
+    {
+        assert(id < num_buckets);
+
+        ForgetNode *node = forget_pool + id;
+        assert(node < forget_pool_back);
+        return node->val->first;
+    }
+
 private:
-    struct ForgetNode;
     typedef std::unordered_map<KeyType, std::pair<ValueType, ForgetNode *>, Hasher> MapType;
 
     struct ForgetNode
@@ -81,8 +116,9 @@ private:
         }
         else
         {
-            forget_pool.emplace_back();
-            node = &forget_pool.back();
+            assert(forget_pool_back < forget_pool + num_buckets);
+            node = forget_pool_back;
+            forget_pool_back++;
         }
         return node;
     }
@@ -118,7 +154,8 @@ private:
     ForgetNode *forget_front = 0;
     ForgetNode *forget_back = 0;
     ForgetNode *forget_available = 0;
-    std::deque<ForgetNode> forget_pool;
+    ForgetNode *forget_pool;
+    ForgetNode *forget_pool_back;
 };
 
 }
