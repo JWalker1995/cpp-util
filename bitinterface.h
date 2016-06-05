@@ -91,22 +91,30 @@ public:
         cur_bit++;
     }
 
-    unsigned int get_element_size(const DataType *start) const
+    void advance_bits(unsigned int bits) const
+    {
+        data += bits / bits_per_element;
+        cur_bit = bits % bits_per_element;
+    }
+
+    unsigned int get_element_delta(const DataType *start) const
     {
         return data - start + (cur_bit ? 1 : 0);
     }
-    unsigned int get_bit_size(const DataType *start) const
+    unsigned int get_bit_delta(const DataType *start) const
     {
-        return (data - start) * (sizeof(DataType) * CHAR_BIT) + cur_bit;
+        return (data - start) * bits_per_element + cur_bit;
     }
 
 private:
+    static constexpr unsigned int bits_per_element = sizeof(DataType) * CHAR_BIT;
+    
     DataType *data;
     unsigned int cur_bit;
 
     void load_word()
     {
-        if (cur_bit == sizeof(DataType) * CHAR_BIT)
+        if (cur_bit == bits_per_element)
         {
             data++;
             cur_bit = 0;
