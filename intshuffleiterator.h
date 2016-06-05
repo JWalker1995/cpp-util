@@ -1,5 +1,5 @@
-#ifndef INTSHUFFLEITERATOR_H
-#define INTSHUFFLEITERATOR_H
+#ifndef JWUTIL_INTSHUFFLEITERATOR_H
+#define JWUTIL_INTSHUFFLEITERATOR_H
 
 #include "linearfeedbackshiftregister.h"
 #include "fastmath.h"
@@ -48,4 +48,4 @@ private:
 
 }
 
-#endif // INTSHUFFLEITERATOR_H
+#endif // JWUTIL_INTSHUFFLEITERATOR_H

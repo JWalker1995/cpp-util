@@ -1,5 +1,5 @@
-#ifndef BITITERATOR_H
-#define BITITERATOR_H
+#ifndef JWUTIL_BITITERATOR_H
+#define JWUTIL_BITITERATOR_H
 
 #include "huffmanmodel.h"
 
@@ -116,4 +116,4 @@ private:
 
 }
 
-#endif // BITITERATOR_H
+#endif // JWUTIL_BITITERATOR_H

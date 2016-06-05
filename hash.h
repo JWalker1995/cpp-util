@@ -1,5 +1,5 @@
-#ifndef HASH_H
-#define HASH_H
+#ifndef JWUTIL_HASH_H
+#define JWUTIL_HASH_H
 
 #include <cstddef>
 
@@ -17,4 +17,4 @@ public:
 
 }
 
-#endif // HASH_H
+#endif // JWUTIL_HASH_H

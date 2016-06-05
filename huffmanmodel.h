@@ -1,5 +1,5 @@
-#ifndef HUFFMANMODEL_H
-#define HUFFMANMODEL_H
+#ifndef JWUTIL_HUFFMANMODEL_H
+#define JWUTIL_HUFFMANMODEL_H
 
 #include <assert.h>
 #include <array>
@@ -229,4 +229,4 @@ private:
 
 }
 
-#endif // HUFFMANMODEL_H
+#endif // JWUTIL_HUFFMANMODEL_H
