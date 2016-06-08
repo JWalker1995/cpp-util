@@ -2,12 +2,12 @@
 #define JWUTIL_RESIZABLESTORAGE_H
 
 #include <assert.h>
-#include <initializer_list>
+#include <algorithm>
 
 namespace jw_util
 {
 
-template <typename DataType>
+template <typename DataType, bool fill_zero = false>
 class ResizableStorage
 {
 public:
@@ -19,7 +19,12 @@ public:
     ResizableStorage(unsigned int init_size)
         : data(new DataType[init_size])
         , size(init_size)
-    {}
+    {
+        if (fill_zero)
+        {
+            std::fill_n(data, init_size, static_cast<DataType>(0));
+        }
+    }
 
     template <typename... UpdatePtrs>
     void resize(unsigned int new_size, UpdatePtrs... ptrs)
@@ -27,15 +32,16 @@ public:
         if (new_size <= size) {return;}
 
         unsigned int new_size_2 = size + (size / 2);
-        if (new_size_2 > new_size) {new_size = new_size_2;}
+        if (new_size < new_size_2) {new_size = new_size_2;}
 
         DataType *new_data = new DataType[new_size];
-        for (unsigned int i = 0; i < size; i++)
+        std::move(data, data + size, new_data);
+        if (fill_zero)
         {
-            new_data[i] = std::move(data[i]);
+            std::fill(new_data + size, new_data + new_size, static_cast<DataType>(0))
         }
 
-        update_ptrs(data, new_data, ptrs...);
+        update_ptrs(reinterpret_cast<char *>(data), reinterpret_cast<char *>(new_data), ptrs...);
 
         delete[] data;
 
@@ -50,11 +56,17 @@ private:
     DataType *data;
     unsigned int size;
 
-    template <typename... UpdatePtrs>
-    static void update_ptrs(DataType *old_data, DataType *new_data, DataType *&ptr, UpdatePtrs... rest)
+    template <typename PtrType, typename... UpdatePtrs>
+#ifdef NDEBUG
+    static
+#endif
+    void update_ptrs(char *old_data, char *new_data, PtrType *&ptr, UpdatePtrs... rest)
     {
-        unsigned int offset = ptr - old_data;
-        ptr = new_data + offset;
+        unsigned int offset = static_cast<char **>(&ptr) - old_data;
+#ifndef NDEBUG
+        assert(offset <= size * sizeof(DataType));
+#endif
+        ptr = *static_cast<PtrType **>(new_data + offset);
         update_ptrs(old_data, new_data, rest...);
     }
 
