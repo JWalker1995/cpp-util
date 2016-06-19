@@ -15,7 +15,7 @@ class WorkQueueInsomniac : public WorkQueueBase<WorkQueueInsomniac<num_threads, 
     friend BaseType;
 
 public:
-    using BaseType::WorkQueueBase;
+    using WorkQueueBase<WorkQueueInsomniac<num_threads, ArgTypes...>, num_threads, ArgTypes...>::WorkQueueBase;
 
     void set_wakeup_worker(jw_util::MethodCallback<> worker)
     {

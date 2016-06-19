@@ -19,13 +19,17 @@ public:
     {
         map.max_load_factor(1.0f);
 
+#ifndef JWUTIL_CACHELRU_FORGET_POOL_IN_CLASS
         forget_pool = new ForgetNode[num_buckets];
+#endif
         forget_pool_back = forget_pool;
     }
 
     ~CacheLRU()
     {
+#ifndef JWUTIL_CACHELRU_FORGET_POOL_IN_CLASS
         delete[] forget_pool;
+#endif
     }
 
     class Result
@@ -91,7 +95,7 @@ public:
     {
         assert(id < num_buckets);
 
-        ForgetNode *node = forget_pool + id;
+        const ForgetNode *node = forget_pool + id;
         assert(node < forget_pool_back);
         return node->val->first;
     }
@@ -151,10 +155,16 @@ private:
     }
 
     MapType map;
+
+#ifdef JWUTIL_CACHELRU_FORGET_POOL_IN_CLASS
+    ForgetNode forget_pool[num_buckets];
+#else
+    ForgetNode *forget_pool;
+#endif
+
     ForgetNode *forget_front = 0;
     ForgetNode *forget_back = 0;
     ForgetNode *forget_available = 0;
-    ForgetNode *forget_pool;
     ForgetNode *forget_pool_back;
 };
 

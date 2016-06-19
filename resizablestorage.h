@@ -27,7 +27,7 @@ public:
     }
 
     template <typename... UpdatePtrs>
-    void resize(unsigned int new_size, UpdatePtrs... ptrs)
+    void resize(unsigned int new_size, UpdatePtrs &... ptrs)
     {
         if (new_size <= size) {return;}
 
@@ -38,10 +38,10 @@ public:
         std::move(data, data + size, new_data);
         if (fill_zero)
         {
-            std::fill(new_data + size, new_data + new_size, static_cast<DataType>(0))
+            std::fill(new_data + size, new_data + new_size, static_cast<DataType>(0));
         }
 
-        update_ptrs(reinterpret_cast<char *>(data), reinterpret_cast<char *>(new_data), ptrs...);
+        update_ptrs(reinterpret_cast<const char *>(data), reinterpret_cast<char *>(new_data), ptrs...);
 
         delete[] data;
 
@@ -60,17 +60,17 @@ private:
 #ifdef NDEBUG
     static
 #endif
-    void update_ptrs(char *old_data, char *new_data, PtrType *&ptr, UpdatePtrs... rest)
+    void update_ptrs(const char *old_data, char *new_data, PtrType *&ptr, UpdatePtrs &... rest)
     {
-        unsigned int offset = static_cast<char **>(&ptr) - old_data;
+        unsigned int offset = reinterpret_cast<const char *>(ptr) - old_data;
 #ifndef NDEBUG
         assert(offset <= size * sizeof(DataType));
 #endif
-        ptr = *static_cast<PtrType **>(new_data + offset);
+        ptr = reinterpret_cast<PtrType *>(new_data + offset);
         update_ptrs(old_data, new_data, rest...);
     }
 
-    static void update_ptrs(DataType *old_data, DataType *new_data) {}
+    static void update_ptrs(const char *old_data, char *new_data) {}
 };
 
 }
