@@ -31,20 +31,15 @@ public:
         assert(!signal.destructed);
 #endif
 
-        unsigned int i = 0;
-        while (i < signal.listeners.size())
+        std::vector<MethodCallback<ArgTypes...>>::const_iterator i = signal.listeners.cbegin();
+        while (i != signal.listeners.cend())
         {
-            ListenerType &listener = signal.listeners[i];
-            if (listener.stub_ptr == &RouteTable::callback)
+            if (i->is_same_method(MethodCallback<ArgTypes...>::create<RouteTable, &RouteTable::callback>(0)))
             {
-                RouteTable *inst = static_cast<RouteTable*>(listener.inst_ptr);
+                RouteTable *inst = i->get_inst<RouteTable>();
                 if (inst->router == this)
                 {
-                    ListenerType &back = signal.listeners.back();
-                    if (&listener != &back)
-                    {
-                        listener = std::move(back);
-                    }
+                    *i = std::move(signal.listeners.back());
                     signal.listeners.pop_back();
                     i--;
                     delete inst;
@@ -54,44 +49,17 @@ public:
         }
     }
 
-    template <void (*Function)(ArgTypes...)>
-    void listen(FilterArgType filter)
-    {
-        add_listener(filter, static_cast<void*>(0), &SignalType::Listener::template function_stub<Function>);
-    }
-
-    template <typename ClassType, void (ClassType::*Method)(ArgTypes...)>
-    void listen(FilterArgType filter, ClassType *inst)
-    {
-        add_listener(filter, static_cast<void*>(inst), &SignalType::Listener::template method_stub<ClassType, Method>);
-    }
-
-    template <void (*Function)(ArgTypes...)>
-    void ignore(FilterArgType filter)
-    {
-        remove_listener(filter, static_cast<void*>(0), &SignalType::Listener::template function_stub<Function>);
-    }
-
-    template <typename ClassType, void (ClassType::*Method)(ArgTypes...)>
-    void ignore(FilterArgType filter, ClassType *inst)
-    {
-        remove_listener(filter, static_cast<void*>(inst), &SignalType::Listener::template method_stub<ClassType, Method>);
-    }
-
-private:
-    void add_listener(FilterArgType filter, void *inst_ptr, typename SignalType::StubType stub_ptr)
+    void listen(FilterArgType filter, MethodCallback<ArgTypes...> callback)
     {
         typename std::vector<ListenerType>::const_iterator i = signal.listeners.cbegin();
         while (i != signal.listeners.cend())
         {
-            if (i->stub_ptr == &RouteTable::callback)
+            if (i->is_same_method(MethodCallback<ArgTypes...>::create<RouteTable, &RouteTable::callback>(0)))
             {
-                RouteTable &inst = *static_cast<RouteTable*>(i->inst_ptr);
-                ListenerType &listener = inst.at(filter);
-                if (!listener.inst_ptr)
+                MethodCallback<ArgTypes...> &existing = i->get_inst<RouteTable>()->at(filter);
+                if (!existing.is_valid())
                 {
-                    listener.inst_ptr = inst_ptr;
-                    listener.stub_ptr = stub_ptr;
+                    existing = callback;
                     return;
                 }
             }
@@ -99,37 +67,33 @@ private:
         }
 
         RouteTable *route_table = new RouteTable(this);
-        signal.add_listener(route_table, &RouteTable::callback);
+        signal.listen(MethodCallback<ArgTypes...>::create<RouteTable, &RouteTable::callback>(route_table));
 
-        ListenerType &listener = route_table->at(filter);
-        listener.inst_ptr = inst_ptr;
-        listener.stub_ptr = stub_ptr;
+        route_table->at(filter) = callback;
     }
 
-    void remove_listener(FilterArgType filter, void *inst_ptr, typename SignalType::StubType stub_ptr)
+    void ignore(FilterArgType filter, MethodCallback<ArgTypes...> callback)
     {
         typename std::vector<ListenerType>::const_iterator i = signal.listeners.cbegin();
         while (i != signal.listeners.cend())
         {
-            if (i->stub_ptr == &RouteTable::callback)
+            if (i->is_same_method(MethodCallback<ArgTypes...>::create<RouteTable, &RouteTable::callback>(0)))
             {
-                RouteTable &inst = *static_cast<RouteTable*>(i->inst_ptr);
-                if (filter < inst.table.size())
+                RouteTable *inst = i->get_inst<RouteTable>();
+                if (filter < inst->table.size())
                 {
-                    ListenerType &listener = inst.table[filter];
-                    if (listener.inst_ptr == inst_ptr && listener.stub_ptr == stub_ptr)
+                    if (inst->table[filter] == callback)
                     {
-                        listener.inst_ptr = 0;
+                        inst->table[filter] = MethodCallback<ArgTypes...>();
                         return;
                     }
                 }
             }
             i++;
         }
-
-        assert(false);
     }
 
+private:
     struct RouteTable
     {
         RouteTable(const ThisType *router)
@@ -145,14 +109,12 @@ private:
             return table[filter];
         }
 
-        static void callback(void *inst_ptr, ArgTypes... args)
+        void callback(ArgTypes... args)
         {
-            RouteTable* inst = static_cast<RouteTable*>(inst_ptr);
-
             FilterArgType dst = std::get<filter_arg>(std::tuple<ArgTypes...>(std::forward<ArgTypes>(args)...));
-            if (dst < inst->table.size())
+            if (dst < table.size())
             {
-                ListenerType &listener = inst->table[dst];
+                ListenerType &listener = table[dst];
                 if (listener.inst_ptr)
                 {
                     listener.call(std::forward<ArgTypes>(args)...);

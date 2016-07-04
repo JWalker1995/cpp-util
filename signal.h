@@ -4,6 +4,8 @@
 #include <assert.h>
 #include <vector>
 
+#include "methodcallback.h"
+
 namespace jw_util
 {
 
@@ -29,35 +31,42 @@ public:
 #endif
     }
 
-    template <void (*Function)(ArgTypes...)>
-    void listen()
+    void listen(MethodCallback<ArgTypes...> method_callback)
     {
-        add_listener(static_cast<void*>(0), &Listener::template function_stub<Function>);
+        listeners.push_back(method_callback);
     }
 
-    template <typename ClassType, void (ClassType::*Method)(ArgTypes...)>
-    void listen(ClassType *inst)
+    template <bool keep_order = false>
+    void ignore(MethodCallback<ArgTypes...> method_callback)
     {
-        add_listener(static_cast<void*>(inst), &Listener::template method_stub<ClassType, Method>);
-    }
+        typename std::vector<MethodCallback<ArgTypes...>>::iterator i = listeners.begin();
+        while (i != listeners.end())
+        {
+            if (*i == method_callback)
+            {
+                if (keep_order)
+                {
+                    listeners.erase(i);
+                }
+                else
+                {
+                    *i = std::move(listeners.back());
+                    listeners.pop_back();
+                }
+                return;
+            }
 
-    template <void (*Function)(ArgTypes...)>
-    void ignore()
-    {
-        remove_listener(static_cast<void*>(0), &Listener::template function_stub<Function>);
-    }
+            i++;
+        }
 
-    template <typename ClassType, void (ClassType::*Method)(ArgTypes...)>
-    void ignore(ClassType *inst)
-    {
-        remove_listener(static_cast<void*>(inst), &Listener::template method_stub<ClassType, Method>);
+        assert(false);
     }
 
     bool has_listeners() const {return !listeners.empty();}
 
     void call(ArgTypes... args) const
     {
-        typename std::vector<Listener>::const_iterator i = listeners.cbegin();
+        typename std::vector<MethodCallback<ArgTypes...>>::const_iterator i = listeners.cbegin();
         while (i != listeners.cend())
         {
             i->call(std::forward<ArgTypes>(args)...);
@@ -66,70 +75,7 @@ public:
     }
 
 private:
-    typedef void (*StubType)(void *inst_ptr, ArgTypes...);
-
-    struct Listener
-    {
-        Listener()
-            : inst_ptr(0)
-        {}
-
-        Listener(void *inst_ptr, StubType stub_ptr)
-            : inst_ptr(inst_ptr)
-            , stub_ptr(stub_ptr)
-        {}
-
-        void call(ArgTypes... args) const
-        {
-            assert(inst_ptr);
-            (*stub_ptr)(inst_ptr, std::forward<ArgTypes>(args)...);
-        }
-
-        void *inst_ptr;
-        StubType stub_ptr;
-
-        template <void (*Function)(ArgTypes...)>
-        static void function_stub(void *inst_ptr, ArgTypes... args)
-        {
-            (void) inst_ptr;
-            (*Function)(std::forward<ArgTypes>(args)...);
-        }
-
-        template <class ClassType, void (ClassType::*Method)(ArgTypes...)>
-        static void method_stub(void *inst_ptr, ArgTypes... args)
-        {
-            ClassType* inst = static_cast<ClassType*>(inst_ptr);
-            (inst->*Method)(std::forward<ArgTypes>(args)...);
-        }
-    };
-
-    void add_listener(void *inst_ptr, StubType stub_ptr)
-    {
-        listeners.emplace_back(inst_ptr, stub_ptr);
-    }
-
-    void remove_listener(void *inst_ptr, StubType stub_ptr)
-    {
-        typename std::vector<Listener>::iterator i = listeners.begin();
-        while (i != listeners.end())
-        {
-            if (i->inst_ptr == inst_ptr && i->stub_ptr == stub_ptr)
-            {
-                Listener &back = listeners.back();
-                if (&*i != &back)
-                {
-                    *i = back;
-                }
-                listeners.pop_back();
-                return;
-            }
-            i++;
-        }
-
-        assert(false);
-    }
-
-    std::vector<Listener> listeners;
+    std::vector<MethodCallback<ArgTypes...>> listeners;
 
 #ifndef NDEBUG
     bool destructed = false;

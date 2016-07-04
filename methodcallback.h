@@ -43,6 +43,26 @@ public:
         (*stub_ptr)(inst_ptr, std::forward<ArgTypes>(args)...);
     }
 
+    template <typename ClassType>
+    ClassType *get_inst() const
+    {
+        return static_cast<ClassType *>(inst_ptr);
+    }
+
+    bool is_same_method(const MethodCallback<ArgTypes...> &other) const
+    {
+        return stub_ptr == other.stub_ptr;
+    }
+
+    bool operator==(const MethodCallback<ArgTypes...> &other) const
+    {
+        return inst_ptr == other.inst_ptr && stub_ptr == other.stub_ptr;
+    }
+    bool operator!=(const MethodCallback<ArgTypes...> &other) const
+    {
+        return inst_ptr != other.inst_ptr || stub_ptr != other.stub_ptr;
+    }
+
 private:
     typedef void (*StubType)(void *inst_ptr, ArgTypes...);
 
@@ -63,7 +83,7 @@ private:
     template <class ClassType, void (ClassType::*Method)(ArgTypes...)>
     static void method_stub(void *inst_ptr, ArgTypes... args)
     {
-        ClassType* inst = static_cast<ClassType*>(inst_ptr);
+        ClassType* inst = static_cast<ClassType *>(inst_ptr);
         (inst->*Method)(std::forward<ArgTypes>(args)...);
     }
 
