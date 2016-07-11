@@ -19,17 +19,41 @@ public:
     {
         map.max_load_factor(1.0f);
 
-#ifndef JWUTIL_CACHELRU_FORGET_POOL_IN_CLASS
+#if JWUTIL_CACHELRU_FORGET_POOL_ON_HEAP
         forget_pool = new ForgetNode[num_buckets];
 #endif
         forget_pool_back = forget_pool;
     }
 
+    CacheLRU(const CacheLRU &other)
+        : CacheLRU()
+    {
+        operator=(other);
+    }
+
     ~CacheLRU()
     {
-#ifndef JWUTIL_CACHELRU_FORGET_POOL_IN_CLASS
+#if JWUTIL_CACHELRU_FORGET_POOL_ON_HEAP
         delete[] forget_pool;
 #endif
+    }
+
+    CacheLRU &operator=(const CacheLRU &other)
+    {
+        // I'm lazy, so I've decreed you can only copy empty caches
+        assert(other.map.empty());
+        assert(other.forget_front == 0);
+        assert(other.forget_back == 0);
+        assert(other.forget_available == 0);
+        assert(other.forget_pool_back == other.forget_pool);
+
+        map.clear();
+        forget_front = 0;
+        forget_back = 0;
+        forget_available = 0;
+        forget_pool_back = forget_pool;
+
+        return *this;
     }
 
     class Result
@@ -156,10 +180,10 @@ private:
 
     MapType map;
 
-#ifdef JWUTIL_CACHELRU_FORGET_POOL_IN_CLASS
-    ForgetNode forget_pool[num_buckets];
-#else
+#if JWUTIL_CACHELRU_FORGET_POOL_ON_HEAP
     ForgetNode *forget_pool;
+#else
+    ForgetNode forget_pool[num_buckets];
 #endif
 
     ForgetNode *forget_front = 0;
