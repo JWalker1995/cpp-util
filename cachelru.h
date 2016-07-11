@@ -71,7 +71,7 @@ public:
 
     Result access(const KeyType &key)
     {
-        float next_load_factor = (map.size() + 2) / map.bucket_count();
+        float next_load_factor = (map.size() + 2.0f) / map.bucket_count();
         if (next_load_factor > map.max_load_factor())
         {
             map.erase(forget_get_front());
@@ -173,7 +173,10 @@ private:
 
     void forget_push_back(ForgetNode *node)
     {
-        forget_back->next = node;
+        if (forget_back)
+        {
+            forget_back->next = node;
+        }
         node->prev = forget_back;
         forget_back = node;
     }
