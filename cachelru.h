@@ -19,6 +19,9 @@ public:
     {
         map.max_load_factor(1.0f);
 
+        forget_connector.prev = &forget_connector;
+        forget_connector.next = &forget_connector;
+
 #if JWUTIL_CACHELRU_FORGET_POOL_ON_HEAP
         forget_pool = new ForgetNode[num_buckets];
 #endif
@@ -42,14 +45,14 @@ public:
     {
         // I'm lazy, so I've decreed you can only copy empty caches
         assert(other.map.empty());
-        assert(other.forget_front == 0);
-        assert(other.forget_back == 0);
+        assert(other.forget_connector.prev == &other.forget_connector);
+        assert(other.forget_connector.next == &other.forget_connector);
         assert(other.forget_available == 0);
         assert(other.forget_pool_back == other.forget_pool);
 
         map.clear();
-        forget_front = 0;
-        forget_back = 0;
+        forget_connector.prev = &forget_connector;
+        forget_connector.next = &forget_connector;
         forget_available = 0;
         forget_pool_back = forget_pool;
 
@@ -74,7 +77,7 @@ public:
         float next_load_factor = (map.size() + 2.0f) / map.bucket_count();
         if (next_load_factor > map.max_load_factor())
         {
-            map.erase(forget_get_front());
+            map.erase(forget_get_front()->val);
             forget_shift();
         }
 
@@ -90,7 +93,7 @@ public:
         if (res.valid)
         {
             // Found element in cache
-            node = element.first->second.second;
+            node = res.bucket->second;
             forget_erase(node);
         }
         else
@@ -110,27 +113,33 @@ public:
         assert(result.bucket->second >= forget_pool);
         assert(result.bucket->second < forget_pool_back);
 
-        unsigned int res = result.bucket->second - forget_pool;
-        assert(res < num_buckets);
-        return res;
+        unsigned int id = result.bucket->second - forget_pool;
+        assert(is_bucket_id_valid(id));
+        return id;
+    }
+
+    bool is_bucket_id_valid(unsigned int id) const
+    {
+        return id < num_buckets && id < (forget_pool_back - forget_pool);
     }
 
     const KeyType &lookup_bucket(unsigned int id) const
     {
-        assert(id < num_buckets);
-
-        const ForgetNode *node = forget_pool + id;
-        assert(node < forget_pool_back);
-        return node->val->first;
+        assert(is_bucket_id_valid(id));
+        return forget_pool[id].val->first;
     }
 
 private:
     typedef std::unordered_map<KeyType, std::pair<ValueType, ForgetNode *>, Hasher> MapType;
 
-    struct ForgetNode
+    struct ListNode
     {
-        ForgetNode *prev = 0;
-        ForgetNode *next = 0;
+        ListNode *prev;
+        ListNode *next;
+    };
+
+    struct ForgetNode : public ListNode
+    {
         typename MapType::const_iterator val;
     };
 
@@ -151,34 +160,32 @@ private:
         return node;
     }
 
-    typename MapType::const_iterator forget_get_front() const
+    ForgetNode *forget_get_front() const
     {
-        return forget_front->val;
+        assert(forget_connector.next != &forget_connector);
+        return static_cast<ForgetNode *>(forget_connector.next);
     }
 
     void forget_shift()
     {
-#ifndef NDEBUG
         assert(forget_available == 0);
-#endif
-        forget_available = forget_front;
-        forget_front = forget_front->next;
+
+        forget_available = forget_get_front();
+        forget_connector.next = forget_connector.next->next;
     }
 
-    void forget_erase(ForgetNode *node)
+    void forget_erase(ListNode *node)
     {
         node->prev->next = node->next;
         node->next->prev = node->prev;
     }
 
-    void forget_push_back(ForgetNode *node)
+    void forget_push_back(ListNode *node)
     {
-        if (forget_back)
-        {
-            forget_back->next = node;
-        }
-        node->prev = forget_back;
-        forget_back = node;
+        forget_connector.prev->next = node;
+        node->prev = forget_connector.prev;
+        node->next = &forget_connector;
+        forget_connector.prev = node;
     }
 
     MapType map;
@@ -189,10 +196,12 @@ private:
     ForgetNode forget_pool[num_buckets];
 #endif
 
-    ForgetNode *forget_front = 0;
-    ForgetNode *forget_back = 0;
     ForgetNode *forget_available = 0;
     ForgetNode *forget_pool_back;
+
+    // forget_connector.next is the first element of the list (will be shifted)
+    // forget_connector.prev is the last element of the list (will be pushed_back to)
+    ListNode forget_connector;
 };
 
 }

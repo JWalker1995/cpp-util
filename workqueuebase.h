@@ -75,12 +75,13 @@ public:
     {
         assert(running);
 
-        running = false;
-
-        if (num_threads)
         {
-            conditional_variable.notify_all();
+            std::lock_guard<std::mutex> lock(mutex);
+            (void) lock;
+            running = false;
         }
+
+        conditional_variable.notify_all();
 
         for (unsigned int i = 0; i < num_threads; i++)
         {

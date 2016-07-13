@@ -41,7 +41,9 @@ private:
 
         if (status == std::cv_status::timeout)
         {
+            std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
             next_wakeup += wakeup_interval;
+            if (next_wakeup < now) {next_wakeup = now;}
             wakeup_worker.call();
         }
     }

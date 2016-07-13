@@ -12,6 +12,13 @@ template <typename Type>
 class PoolFIFO
 {
 public:
+    PoolFIFO()
+        : alloc_cur(new Type[alloc_size])
+        , alloc_end(alloc_cur + alloc_size)
+        , free_cur(alloc_cur)
+        , free_end(alloc_end)
+    {}
+
     Type &alloc()
     {
         if (alloc_cur == alloc_end)
@@ -24,32 +31,30 @@ public:
 
     void free(const Type &type)
     {
-        if (free_cur)
+        if (free_cur == free_end)
         {
-            assert(&type == free_cur);
-            free_cur++;
-            if (free_cur == free_end)
-            {
-                const Type *free_start = free_end - alloc_size;
-                delete[] free_start;
-                free_cur = 0;
-            }
-        }
-        else
-        {
+            const Type *free_start = free_end - alloc_size;
+            delete[] free_start;
+
             free_cur = &type;
             free_end = free_cur + alloc_size;
         }
+
+        assert(free_cur == &type);
+        free_cur++;
     }
 
 private:
     static constexpr unsigned int alloc_bytes = 65536;
-    static constexpr unsigned int alloc_size = alloc_bytes / sizeof(Type);
+    static constexpr unsigned int alloc_size = alloc_bytes > sizeof(Type) ? alloc_bytes / sizeof(Type) : 1;
 
-    Type *alloc_cur = 0;
-    Type *alloc_end = 0;
+    Type *alloc_cur;
+    Type *alloc_end;
 
-    const Type *free_cur = 0;
+    // Padding so alloc_* and free_* are on different cache lines
+    char _padding[64];
+
+    const Type *free_cur;
     const Type *free_end;
 };
 
