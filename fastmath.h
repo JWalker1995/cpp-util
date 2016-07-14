@@ -82,6 +82,12 @@ public:
         }
     }
 
+    template <typename T>
+    static constexpr bool is_pow2(T num)
+    {
+        return ((num - 1) & num) == 0;
+    }
+
 #ifdef FASTMATH_ENABLE_INTINVERSE_FLOAT
     template <typename T>
     static float int_inverse_float(T num)
