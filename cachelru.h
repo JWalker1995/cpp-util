@@ -14,6 +14,19 @@ private:
     struct ForgetNode;
 
 public:
+    class Result
+    {
+        friend class CacheLRU;
+
+    public:
+        ValueType *get_value() const {return &bucket->first;}
+        bool is_valid() const {return valid;}
+
+    private:
+        std::pair<ValueType, ForgetNode *> *bucket;
+        bool valid;
+    };
+
     CacheLRU()
         : map(num_buckets)
     {
@@ -58,19 +71,6 @@ public:
 
         return *this;
     }
-
-    class Result
-    {
-        friend class CacheLRU;
-
-    public:
-        ValueType *get_value() const {return &bucket->first;}
-        bool is_valid() const {return valid;}
-
-    private:
-        std::pair<ValueType, ForgetNode *> *bucket;
-        bool valid;
-    };
 
     Result access(const KeyType &key)
     {
