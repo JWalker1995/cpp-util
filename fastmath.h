@@ -83,6 +83,18 @@ public:
     }
 
     template <typename T>
+    static constexpr signed int log2_constexpr(T num)
+    {
+        static_assert(std::is_integral<T>::value, "Unknown argument type (not integral) for constexpr FastMath::log2");
+
+        static_assert(std::is_unsigned<T>::value, "Cannot call FastMath::log2 with a signed integer argument");
+
+        signed int res = 0;
+        while (num >>= 1) {res++;}
+        return res;
+    }
+
+    template <typename T>
     static constexpr bool is_pow2(T num)
     {
         return ((num - 1) & num) == 0;
