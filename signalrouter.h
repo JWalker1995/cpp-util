@@ -15,7 +15,7 @@ class SignalRouter<filter_arg, Signal<ArgTypes...>>
 {
 private:
     typedef Signal<ArgTypes...> SignalType;
-    typedef typename SignalType::Listener ListenerType;
+    typedef typename SignalType::ListenerType ListenerType;
     typedef SignalRouter<filter_arg, SignalType> ThisType;
     typedef typename std::tuple_element<filter_arg, std::tuple<ArgTypes...>>::type FilterArgType;
 
@@ -31,12 +31,12 @@ public:
         assert(!signal.destructed);
 #endif
 
-        std::vector<MethodCallback<ArgTypes...>>::const_iterator i = signal.listeners.cbegin();
-        while (i != signal.listeners.cend())
+        typename std::vector<ListenerType>::iterator i = signal.listeners.begin();
+        while (i != signal.listeners.end())
         {
-            if (i->is_same_method(MethodCallback<ArgTypes...>::create<RouteTable, &RouteTable::callback>(0)))
+            if (i->is_same_method(ListenerType::template create<RouteTable, &RouteTable::callback>(0)))
             {
-                RouteTable *inst = i->get_inst<RouteTable>();
+                RouteTable *inst = i->template get_inst<RouteTable>();
                 if (inst->router == this)
                 {
                     *i = std::move(signal.listeners.back());
@@ -49,14 +49,14 @@ public:
         }
     }
 
-    void listen(FilterArgType filter, MethodCallback<ArgTypes...> callback)
+    void listen(FilterArgType filter, ListenerType callback)
     {
         typename std::vector<ListenerType>::const_iterator i = signal.listeners.cbegin();
         while (i != signal.listeners.cend())
         {
-            if (i->is_same_method(MethodCallback<ArgTypes...>::create<RouteTable, &RouteTable::callback>(0)))
+            if (i->is_same_method(ListenerType::template create<RouteTable, &RouteTable::callback>(0)))
             {
-                MethodCallback<ArgTypes...> &existing = i->get_inst<RouteTable>()->at(filter);
+                ListenerType &existing = i->template get_inst<RouteTable>()->at(filter);
                 if (!existing.is_valid())
                 {
                     existing = callback;
@@ -67,24 +67,24 @@ public:
         }
 
         RouteTable *route_table = new RouteTable(this);
-        signal.listen(MethodCallback<ArgTypes...>::create<RouteTable, &RouteTable::callback>(route_table));
+        signal.listen(ListenerType::template create<RouteTable, &RouteTable::callback>(route_table));
 
         route_table->at(filter) = callback;
     }
 
-    void ignore(FilterArgType filter, MethodCallback<ArgTypes...> callback)
+    void ignore(FilterArgType filter, ListenerType callback)
     {
         typename std::vector<ListenerType>::const_iterator i = signal.listeners.cbegin();
         while (i != signal.listeners.cend())
         {
-            if (i->is_same_method(MethodCallback<ArgTypes...>::create<RouteTable, &RouteTable::callback>(0)))
+            if (i->is_same_method(ListenerType::template create<RouteTable, &RouteTable::callback>(0)))
             {
-                RouteTable *inst = i->get_inst<RouteTable>();
+                RouteTable *inst = i->template get_inst<RouteTable>();
                 if (filter < inst->table.size())
                 {
                     if (inst->table[filter] == callback)
                     {
-                        inst->table[filter] = MethodCallback<ArgTypes...>();
+                        inst->table[filter] = ListenerType();
                         return;
                     }
                 }
@@ -115,7 +115,7 @@ private:
             if (dst < table.size())
             {
                 ListenerType &listener = table[dst];
-                if (listener.inst_ptr)
+                if (listener.is_valid())
                 {
                     listener.call(std::forward<ArgTypes>(args)...);
                 }

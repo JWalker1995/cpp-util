@@ -84,7 +84,9 @@ public:
             {
                 bool operator() (const Node *a, const Node *b) const
                 {
-                    assert(a->value != b->value);
+                    if (a->children[0] == 0 && b->children[0] == 0) {
+                        assert(a->value != b->value);
+                    }
 
                     if (a->freq != b->freq) {return a->freq > b->freq;}
                     else {return a->value > b->value;}
@@ -161,7 +163,7 @@ public:
         Writer()
         {}
 
-        Writer(const HuffmanModel<outputs> &model, unsigned int value)
+        Writer(const HuffmanModel &model, unsigned int value)
             : path(model.write_list[value])
         {}
 
@@ -213,19 +215,24 @@ private:
     static DataType *get_data(std::array<DataType, size> &res) {return res.data();}
 
     template <typename DataType>
+    static const DataType *get_data(const DataType *res) {return res;}
+    template <typename DataType, std::size_t size>
+    static const DataType *get_data(const std::array<DataType, size> &res) {return res.data();}
+
+    template <typename DataType>
     static void free_data(DataType *res) {delete[] res;}
     template <typename DataType, std::size_t size>
     static void free_data(std::array<DataType, size> &res) {}
 
     template <typename DataType>
-    static void assert_inside(DataType *res, unsigned int index) {}
+    static void assert_inside(const DataType *res, unsigned int index) {}
     template <typename DataType, std::size_t size>
-    static void assert_inside(std::array<DataType, size> &res, unsigned int index) {assert(index < size);}
+    static void assert_inside(const std::array<DataType, size> &res, unsigned int index) {assert(index < res.size());}
 
     template <typename DataType>
-    static void assert_at_end(DataType *res, unsigned int index) {}
+    static void assert_at_end(const DataType *res, unsigned int index) {}
     template <typename DataType, std::size_t size>
-    static void assert_at_end(std::array<DataType, size> &res, unsigned int index) {assert(index == size);}
+    static void assert_at_end(const std::array<DataType, size> &res, unsigned int index) {assert(index == res.size());}
 };
 
 }

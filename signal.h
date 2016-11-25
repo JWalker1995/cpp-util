@@ -24,6 +24,8 @@ class Signal
     template <unsigned int filter_arg, typename... ArgTypes2> friend class SignalRouter;
 
 public:
+    typedef MethodCallback<ArgTypes...> ListenerType;
+
     ~Signal()
     {
 #ifndef NDEBUG
@@ -31,15 +33,15 @@ public:
 #endif
     }
 
-    void listen(MethodCallback<ArgTypes...> method_callback)
+    void listen(ListenerType method_callback)
     {
         listeners.push_back(method_callback);
     }
 
     template <bool keep_order = false>
-    void ignore(MethodCallback<ArgTypes...> method_callback)
+    void ignore(ListenerType method_callback)
     {
-        typename std::vector<MethodCallback<ArgTypes...>>::iterator i = listeners.begin();
+        typename std::vector<ListenerType>::iterator i = listeners.begin();
         while (i != listeners.end())
         {
             if (*i == method_callback)
@@ -66,7 +68,7 @@ public:
 
     void call(ArgTypes... args) const
     {
-        typename std::vector<MethodCallback<ArgTypes...>>::const_iterator i = listeners.cbegin();
+        typename std::vector<ListenerType>::const_iterator i = listeners.cbegin();
         while (i != listeners.cend())
         {
             i->call(std::forward<ArgTypes>(args)...);
@@ -75,7 +77,7 @@ public:
     }
 
 private:
-    std::vector<MethodCallback<ArgTypes...>> listeners;
+    std::vector<ListenerType> listeners;
 
 #ifndef NDEBUG
     bool destructed = false;
