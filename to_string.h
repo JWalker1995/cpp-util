@@ -2,6 +2,7 @@
 #define TO_STRING_H
 
 #include <string>
+#include <typeinfo>
 
 namespace jw_util {
 
