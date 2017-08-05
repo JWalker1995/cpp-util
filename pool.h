@@ -7,7 +7,7 @@
 namespace jw_util
 {
 
-template <typename Type, bool shrink = false>
+template <typename Type, bool shrink = false, typename ContainerType = std::deque<Type>>
 class Pool
 {
 public:
@@ -38,10 +38,10 @@ public:
         }
     }
 
-    std::deque<Type> &get_data() {return pool;}
+    ContainerType &get_data() {return pool;}
 
 private:
-    std::deque<Type> pool;
+    ContainerType pool;
     std::vector<Type*> freed;
 };
 
