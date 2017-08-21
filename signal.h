@@ -2,86 +2,71 @@
 #define JWUTIL_SIGNAL_H
 
 #include <assert.h>
+#include <type_traits>
 #include <vector>
+#include <algorithm>
 
 #include "methodcallback.h"
 
 namespace jw_util
 {
 
-/*
-Fast insertion (listen) and calling
-Slow removal (ignore)
-No guarantee on listener call order
-*/
-
-template <unsigned int filter_arg, typename... ArgTypes>
-class SignalRouter;
-
 template <typename... ArgTypes>
-class Signal
-{
-    template <unsigned int filter_arg, typename... ArgTypes2> friend class SignalRouter;
-
+class Signal {
 public:
-    typedef MethodCallback<ArgTypes...> ListenerType;
-
-    ~Signal()
-    {
-#ifndef NDEBUG
-        destructed = true;
-#endif
-    }
-
-    void listen(ListenerType method_callback)
-    {
-        listeners.push_back(method_callback);
-    }
-
-    template <bool keep_order = false>
-    void ignore(ListenerType method_callback)
-    {
-        typename std::vector<ListenerType>::iterator i = listeners.begin();
-        while (i != listeners.end())
+    class Listener {
+    public:
+        Listener(Signal &signal, const jw_util::MethodCallback<ArgTypes...> &callback_arg)
+            : signal(signal)
+            , callback(callback_arg)
         {
-            if (*i == method_callback)
-            {
-                if (keep_order)
-                {
-                    listeners.erase(i);
-                }
-                else
-                {
-                    *i = std::move(listeners.back());
-                    listeners.pop_back();
-                }
-                return;
-            }
-
-            i++;
+            enable();
         }
 
-        assert(false);
+        ~Listener() {
+            disable();
+        }
+
+        void enable() {
+            signal.add(callback);
+        }
+
+        void disable() {
+            signal.remove(callback);
+        }
+
+    private:
+        Signal &signal;
+        jw_util::MethodCallback<ArgTypes...> callback;
+    };
+
+    ~Signal() {
+        assert(callbacks.empty());
     }
 
-    bool has_listeners() const {return !listeners.empty();}
-
-    void call(ArgTypes... args) const
-    {
-        typename std::vector<ListenerType>::const_iterator i = listeners.cbegin();
-        while (i != listeners.cend())
-        {
+    void operator() (ArgTypes... args) {
+        typename std::vector<jw_util::MethodCallback<ArgTypes...>>::const_iterator i
+            = callbacks.cbegin();
+        while (i != callbacks.cend()) {
             i->call(std::forward<ArgTypes>(args)...);
             i++;
         }
     }
 
 private:
-    std::vector<ListenerType> listeners;
+    void add(const jw_util::MethodCallback<ArgTypes...> &callback) {
+        callbacks.push_back(callback);
+    }
 
-#ifndef NDEBUG
-    bool destructed = false;
-#endif
+    void remove(const jw_util::MethodCallback<ArgTypes...> &callback) {
+        typename std::vector<jw_util::MethodCallback<ArgTypes...>>::reverse_iterator found
+            = std::find(callbacks.rbegin(), callbacks.rend(), callback);
+        assert(found != callbacks.rend());
+        *found = callbacks.back();
+        callbacks.pop_back();
+    }
+
+    std::vector<jw_util::MethodCallback<ArgTypes...>> callbacks;
 };
 
 }
