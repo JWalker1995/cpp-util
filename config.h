@@ -5,6 +5,8 @@
 #include <fstream>
 #include <yaml-cpp/yaml.h>
 
+#include "jw_util/context.h"
+
 namespace jw_util
 {
 
@@ -78,11 +80,14 @@ public:
         */
     }
 
-    static const Config &get_instance() {return inst;}
-    static Config &get_mutable_instance() {return inst;}
+    static Config prop(Context<Config> context, const std::string &key) {
+        return context.get<Config>()[key];
+    }
 
-private:
-    static Config inst;
+    template <typename CastType>
+    CastType operator CastType() const {
+        return node.as<CastType>();
+    }
 };
 
 }

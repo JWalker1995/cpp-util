@@ -12,11 +12,11 @@ namespace jw_util
 {
 
 template <typename... ArgTypes>
-class Signal {
+class SignalEmitter {
 public:
     class Listener {
     public:
-        Listener(Signal &signal, const jw_util::MethodCallback<ArgTypes...> &callback_arg)
+        Listener(SignalEmitter &signal, const jw_util::MethodCallback<ArgTypes...> &callback_arg)
             : signal(signal)
             , callback(callback_arg)
         {
@@ -36,15 +36,16 @@ public:
         }
 
     private:
-        Signal &signal;
+        SignalEmitter &signal;
         jw_util::MethodCallback<ArgTypes...> callback;
     };
 
-    ~Signal() {
+    ~SignalEmitter() {
         assert(callbacks.empty());
     }
 
-    void operator() (ArgTypes... args) {
+protected:
+    void trigger(ArgTypes... args) {
         typename std::vector<jw_util::MethodCallback<ArgTypes...>>::const_iterator i
             = callbacks.cbegin();
         while (i != callbacks.cend()) {
@@ -67,6 +68,14 @@ private:
     }
 
     std::vector<jw_util::MethodCallback<ArgTypes...>> callbacks;
+};
+
+template <typename... ArgTypes>
+class Signal : public SignalEmitter<ArgTypes...> {
+public:
+    void operator()(ArgTypes... args) {
+        trigger(std::forward<ArgTypes>(args)...);
+    }
 };
 
 }
