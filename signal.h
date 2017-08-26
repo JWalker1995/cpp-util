@@ -40,6 +40,10 @@ public:
         jw_util::MethodCallback<ArgTypes...> callback;
     };
 
+    SignalEmitter(SignalEmitter&&) = delete;
+    SignalEmitter(const SignalEmitter&) = delete;
+    SignalEmitter& operator=(const SignalEmitter&) = delete;
+
     ~SignalEmitter() {
         assert(callbacks.empty());
     }
@@ -73,8 +77,8 @@ private:
 template <typename... ArgTypes>
 class Signal : public SignalEmitter<ArgTypes...> {
 public:
-    void operator()(ArgTypes... args) {
-        trigger(std::forward<ArgTypes>(args)...);
+    void trigger(ArgTypes... args) {
+        SignalEmitter<ArgTypes...>::trigger(std::forward<ArgTypes>(args)...);
     }
 };
 

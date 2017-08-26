@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 
+#include "jw_util/config.h"
 #include "jw_util/context.h"
 
 namespace jw_util {
@@ -21,22 +22,26 @@ public:
     Registry(Context<ContextArgs...> context) {
         Config::const_iterator i = context.get<Config>().cbegin();
         while (i != context.get<Config>().cend()) {
-            data.emplace(i->first, context.extend(Config(i->second)));
+            map.emplace(i->first, context.extend(Config(i->second)));
             i++;
         }
     }
 
     ElementType &get(const std::string &key) {
-        std::unordered_map<std::string, ElementType>::const_iterator found = data.find(key);
-        if (found != data.cend()) {
-            return data;
+        std::unordered_map<std::string, ElementType>::const_iterator found = map.find(key);
+        if (found != map.cend()) {
+            return map;
         } else {
             throw AccessException(key);
         }
     }
 
+    std::unordered_map<std::string, ElementType> &getMap() {
+        return map;
+    }
+
 private:
-    std::unordered_map<std::string, ElementType> data;
+    std::unordered_map<std::string, ElementType> map;
 };
 
 }
