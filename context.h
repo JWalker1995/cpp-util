@@ -11,15 +11,14 @@ class Context {
     friend class Context;
 
 public:
-    template <typename... NewArgTypes>
-    Context(NewArgTypes &... newArgs)
-        : refs {newArgs...}
+    Context(ArgTypes &... newArgs)
+        : refs(newArgs...)
     {}
 
     template <typename... ParentContextArgs, typename... NewArgTypes>
-    Context(Context<ParentContextArgs...> &&parentContext, NewArgTypes &... newArgs)
+    Context(Context<ParentContextArgs...> &parentContext, NewArgTypes &... newArgs)
         // TODO: Replace std::get with version that doesn't fail on duplicates
-        : refs {std::get<ArgTypes &>(std::tuple_cat(std::tuple<NewArgTypes &...>(newArgs...), parentContext.refs))...}
+        : refs(std::get<ArgTypes &>(std::tuple_cat(std::tuple<NewArgTypes &...>(newArgs...), parentContext.refs))...)
     {}
 
     template <typename GetType>
@@ -33,7 +32,10 @@ public:
     }
 
 private:
-    std::tuple<ArgTypes&...> refs;
+    std::tuple<ArgTypes &...> refs;
+
+    template <typename GetType, typename... TupleTypes>
+    static getFirst()
 };
 
 }

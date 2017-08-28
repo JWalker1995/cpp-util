@@ -40,6 +40,9 @@ public:
         jw_util::MethodCallback<ArgTypes...> callback;
     };
 
+    SignalEmitter() {}
+
+    // Disable moving
     SignalEmitter(SignalEmitter&&) = delete;
     SignalEmitter(const SignalEmitter&) = delete;
     SignalEmitter& operator=(const SignalEmitter&) = delete;

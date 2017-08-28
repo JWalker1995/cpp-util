@@ -5,7 +5,7 @@
 
 namespace jw_util {
 
-template <typename DataType, typename SignalType = DataType>
+template <typename DataType, typename SignalType = const DataType &>
 class Var {
 private:
     class ChangeSignal : public jw_util::SignalEmitter<SignalType> {

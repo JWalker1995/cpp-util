@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 
+#include "jw_util/baseexception.h"
 #include "jw_util/config.h"
 #include "jw_util/context.h"
 
@@ -11,24 +12,24 @@ namespace jw_util {
 template <typename ElementType>
 class Registry {
 public:
-    class AccessException : public Exception {
+    class AccessException : public BaseException {
     public:
         AccessException(const std::string &key)
-            : Exception("Could not find key \"" + key + "\" in registry")
+            : BaseException("Could not find key \"" + key + "\" in registry")
         {}
     };
 
     template <typename... ContextArgs>
     Registry(Context<ContextArgs...> context) {
-        Config::const_iterator i = context.get<Config>().cbegin();
-        while (i != context.get<Config>().cend()) {
-            map.emplace(i->first, context.extend(Config(i->second)));
-            i++;
+        Config::MapIterator i(context.template get<const Config>());
+        while (i.has()) {
+            map.emplace(i.key(), context.extend(i.val()));
+            i.advance();
         }
     }
 
     ElementType &get(const std::string &key) {
-        std::unordered_map<std::string, ElementType>::const_iterator found = map.find(key);
+        typename std::unordered_map<std::string, ElementType>::const_iterator found = map.find(key);
         if (found != map.cend()) {
             return map;
         } else {

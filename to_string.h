@@ -38,5 +38,14 @@ inline static std::string to_string(char **arg) {
     return to_string(const_cast<char *const *>(arg));
 }
 
+
+template <typename FirstArgType, typename... RestArgTypes>
+inline static std::string to_string(const FirstArgType &firstArg, const RestArgTypes &... restArgs) {
+    return to_string(firstArg) + to_string(restArgs...);
+}
+inline static std::string to_string() {
+    return std::string();
+}
+
 }
 #endif // TO_STRING_H
