@@ -23,7 +23,8 @@ public:
     Registry(Context<ContextArgs...> context) {
         Config::MapIterator i(context.template get<const Config>());
         while (i.has()) {
-            map.emplace(i.key(), context.extend(i.val()));
+            auto res = map.emplace(i.key(), context.extend(i.val()));
+            assert(res.second);
             i.advance();
         }
     }

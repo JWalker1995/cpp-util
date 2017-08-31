@@ -15,9 +15,6 @@ private:
 public:
     typedef typename jw_util::SignalEmitter<SignalType>::Listener ChangeListener;
 
-    Var()
-    {}
-
     Var(const DataType &initData)
         : data(initData)
     {}
