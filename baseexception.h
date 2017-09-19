@@ -4,6 +4,8 @@
 #include <exception>
 #include <string>
 
+#include "jw_util/to_string.h"
+
 namespace jw_util {
 
 class BaseException : public std::exception {
@@ -13,8 +15,9 @@ public:
     }
 
 protected:
-    BaseException(const std::string &msg)
-        : str(msg)
+    template <typename... ArgTypes>
+    BaseException(ArgTypes &... args)
+        : str(jw_util::to_string(args...))
     {}
 
     std::string str;

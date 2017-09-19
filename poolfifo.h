@@ -19,28 +19,28 @@ public:
         , free_end(alloc_end)
     {}
 
-    Type &alloc()
+    Type *alloc()
     {
         if (alloc_cur == alloc_end)
         {
             alloc_cur = new Type[alloc_size];
             alloc_end = alloc_cur + alloc_size;
         }
-        return *alloc_cur++;
+        return alloc_cur++;
     }
 
-    void free(const Type &type)
+    void free(const Type *type)
     {
         if (free_cur == free_end)
         {
             const Type *free_start = free_end - alloc_size;
             delete[] free_start;
 
-            free_cur = &type;
+            free_cur = type;
             free_end = free_cur + alloc_size;
         }
 
-        assert(free_cur == &type);
+        assert(free_cur == type);
         free_cur++;
     }
 

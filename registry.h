@@ -15,17 +15,17 @@ public:
     class AccessException : public BaseException {
     public:
         AccessException(const std::string &key)
-            : BaseException("Could not find key \"" + key + "\" in registry")
+            : BaseException("Could not find key \"", key, "\" in registry")
         {}
     };
 
     template <typename... ContextArgs>
     Registry(Context<ContextArgs...> context) {
-        Config::MapIterator i(context.template get<const Config>());
-        while (i.has()) {
-            auto res = map.emplace(i.key(), context.extend(i.val()));
+        YAML::const_iterator i = context.template get<Config::Node>().begin();
+        while (i != context.template get<Config::Node>().end()) {
+            auto res = map.emplace(i->first, context.extend(i->second));
             assert(res.second);
-            i.advance();
+            i++;
         }
     }
 

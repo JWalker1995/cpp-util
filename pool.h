@@ -11,30 +11,30 @@ template <typename Type, bool shrink = false, typename ContainerType = std::dequ
 class Pool
 {
 public:
-    Type &alloc()
+    Type *alloc()
     {
         if (freed.empty())
         {
             pool.emplace_back();
-            return pool.back();
+            return &pool.back();
         }
         else
         {
-            Type &res = *freed.back();
+            Type *res = freed.back();
             freed.pop_back();
             return res;
         }
     }
 
-    void free(const Type &type)
+    void free(const Type *type)
     {
-        if (shrink && &type == &pool.back())
+        if (shrink && type == &pool.back())
         {
             pool.pop_back();
         }
         else
         {
-            freed.push_back(const_cast<Type*>(&type));
+            freed.push_back(const_cast<Type *>(type));
         }
     }
 
@@ -42,7 +42,7 @@ public:
 
 private:
     ContainerType pool;
-    std::vector<Type*> freed;
+    std::vector<Type *> freed;
 };
 
 }
