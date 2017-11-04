@@ -38,6 +38,7 @@ public:
         }
     }
 
+    const ContainerType &get_data() const {return pool;}
     ContainerType &get_data() {return pool;}
 
 private:
