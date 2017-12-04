@@ -42,7 +42,7 @@ public:
     {}
 
     template <typename GetType>
-    GetType &get() {
+    GetType &get() const {
         return std::get<GetType &>(refs);
     }
 
