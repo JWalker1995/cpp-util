@@ -11,18 +11,19 @@ template <typename Type, bool shrink = false, typename ContainerType = std::dequ
 class Pool
 {
 public:
-    Type *alloc()
+    template <typename... ArgTypes>
+    Type *alloc(ArgTypes... args)
     {
         if (freed.empty())
         {
-            pool.emplace_back();
+            pool.emplace_back(std::forward<ArgTypes>(args)...);
             return &pool.back();
         }
         else
         {
             Type *res = freed.back();
             freed.pop_back();
-            return res;
+            return new (res) Type(std::forward<ArgTypes>(args)...);
         }
     }
 
@@ -34,6 +35,7 @@ public:
         }
         else
         {
+            type->~Type();
             freed.push_back(const_cast<Type *>(type));
         }
     }
