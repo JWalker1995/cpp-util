@@ -12,7 +12,7 @@ class Pool
 {
 public:
     template <typename... ArgTypes>
-    Type *alloc(ArgTypes... args)
+    Type *alloc(ArgTypes &&... args)
     {
         if (freed.empty())
         {
@@ -35,7 +35,7 @@ public:
         }
         else
         {
-            type->~Type();
+            type->Type::~Type();
             freed.push_back(const_cast<Type *>(type));
         }
     }
