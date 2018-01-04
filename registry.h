@@ -4,7 +4,7 @@
 #include <unordered_map>
 
 #include "jw_util/baseexception.h"
-#include "jw_util/context.h"
+#include "jw_util/preparedcontext.h"
 
 namespace jw_util {
 
