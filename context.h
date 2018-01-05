@@ -6,6 +6,7 @@
 #include <typeindex>
 #include <vector>
 #include <unordered_map>
+#include <cxxabi.h>
 
 #define DEBUG_CONTEXT 1
 
@@ -20,7 +21,7 @@ public:
     template <typename InterfaceType, typename ImplementationType = InterfaceType>
     void provide() {
         if (DEBUG_CONTEXT) {
-            std::cout << "Context::registerClass: " << typeid(InterfaceType).name() << ", " << typeid(ImplementationType).name() << std::endl;
+            std::cout << "Context::registerClass: " << getTypeName<InterfaceType>() << ", " << getTypeName<ImplementationType>() << std::endl;
         }
         ClassEntry entry;
         entry.prepareManagedInstance<InterfaceType, ImplementationType>();
@@ -31,7 +32,7 @@ public:
     template <typename InterfaceType>
     void provideInstance(InterfaceType &instance) {
         if (DEBUG_CONTEXT) {
-            std::cout << "Context::insertInstance: " << typeid(InterfaceType).name() << std::endl;
+            std::cout << "Context::insertInstance: " << getTypeName<InterfaceType>() << std::endl;
         }
         ClassEntry entry;
         entry.setBorrowedInstance<InterfaceType>(&instance);
@@ -42,11 +43,11 @@ public:
     template <typename InterfaceType>
     InterfaceType &get() {
         if (DEBUG_CONTEXT) {
-            std::cout << "Context::get: " << typeid(InterfaceType).name() << std::endl;
+            std::cout << "Context::get: " << getTypeName<InterfaceType>() << std::endl;
         }
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         if (found == classMap.end()) {
-            std::cout << "Context::get: Cannot find any provided type with interface " << typeid(InterfaceType).name() << std::endl;
+            std::cerr << "Context::get: Cannot find any provided type with interface " << getTypeName<InterfaceType>() << std::endl;
             assert(false);
 
             /*
@@ -116,7 +117,9 @@ private:
 
         template <typename ClassType>
         ClassType *getInstance() const {
-            return static_cast<ClassType *>(returnInstance);
+            assert(returnInstance);
+            assert(std::is_const<ClassType>::value || !isConst);
+            return const_cast<ClassType *>(static_cast<const ClassType *>(returnInstance));
         }
 
         template <typename ClassType>
@@ -126,9 +129,10 @@ private:
             assert(!managedInstance);
             assert(!destroyPtr);
 
-            managedInstance = 0;
-            returnInstance = instance;
             createPtr = &ClassEntry::error;
+            returnInstance = static_cast<const void *>(instance);
+            managedInstance = 0;
+            isConst = std::is_const<ClassType>::value;
             destroyPtr = &ClassEntry::noop;
         }
 
@@ -159,30 +163,32 @@ private:
 
     private:
         void (ClassEntry::*createPtr)(Context &context) = 0;
-        void *returnInstance = 0;
-        void *managedInstance = 0;
+        const void *returnInstance = 0;
+        const void *managedInstance = 0;
+        bool isConst;
         void (ClassEntry::*destroyPtr)() = 0;
 
         template <typename ReturnType, typename ManagedType>
         void createStub(Context &context) {
             if (DEBUG_CONTEXT) {
-                std::cout << "Context::createStub: " << typeid(ReturnType).name() << ", " << typeid(ManagedType).name() << std::endl;
+                std::cout << "Context::createStub: " << getTypeName<ReturnType>() << ", " << getTypeName<ManagedType>() << std::endl;
             }
             assert(!managedInstance);
             assert(!returnInstance);
             ManagedType *instance = new ManagedType(context);
-            managedInstance = instance;
-            returnInstance = static_cast<ReturnType *>(instance);
+            returnInstance = static_cast<const ReturnType *>(instance);
+            managedInstance = static_cast<const void *>(instance);
+            isConst = std::is_const<ManagedType>::value;
         }
 
         template <typename ReturnType, typename ManagedType>
         void destroyStub() {
             if (DEBUG_CONTEXT) {
-                std::cout << "Context::destroyStub: " << typeid(ReturnType).name() << ", " << typeid(ManagedType).name() << std::endl;
+                std::cout << "Context::destroyStub: " << getTypeName<ReturnType>() << ", " << getTypeName<ManagedType>() << std::endl;
             }
-            delete static_cast<ManagedType *>(managedInstance);
-            managedInstance = 0;
+            delete static_cast<const ManagedType *>(managedInstance);
             returnInstance = 0;
+            managedInstance = 0;
         }
 
         void error(Context &context) {
@@ -194,6 +200,15 @@ private:
 
         void noop() {}
     };
+
+    template <typename Type>
+    static const char *getTypeName() {
+        int status = 0;
+        static thread_local const char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, 0, &status);
+        assert(status == 0);
+        return realname;
+
+    }
 
     std::vector<ClassEntry *> classOrder;
     std::unordered_map<std::type_index, ClassEntry> classMap;
