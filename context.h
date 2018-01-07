@@ -1,14 +1,18 @@
 #ifndef JWUTIL_CONTEXT_H
 #define JWUTIL_CONTEXT_H
 
-#include <assert.h>
+#define JWUTIL_CONTEXT_ENABLE_DEBUG_INFO 1
+#define JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE 0
+
+#if JWUTIL_CONTEXT_ENABLE_DEBUG_INFO || JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE
 #include <iostream>
+#endif
+
+#include <assert.h>
 #include <typeindex>
 #include <vector>
 #include <unordered_map>
 #include <cxxabi.h>
-
-#define DEBUG_CONTEXT 1
 
 namespace jw_util {
 
@@ -20,7 +24,7 @@ public:
 
     template <typename InterfaceType, typename ImplementationType = InterfaceType>
     void provide() {
-        if (DEBUG_CONTEXT) {
+        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
             std::cout << "Context::registerClass: " << getTypeName<InterfaceType>() << ", " << getTypeName<ImplementationType>() << std::endl;
         }
         ClassEntry entry;
@@ -31,7 +35,7 @@ public:
 
     template <typename InterfaceType>
     void provideInstance(InterfaceType &instance) {
-        if (DEBUG_CONTEXT) {
+        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
             std::cout << "Context::insertInstance: " << getTypeName<InterfaceType>() << std::endl;
         }
         ClassEntry entry;
@@ -42,12 +46,14 @@ public:
 
     template <typename InterfaceType>
     InterfaceType &get() {
-        if (DEBUG_CONTEXT) {
+        if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
             std::cout << "Context::get: " << getTypeName<InterfaceType>() << std::endl;
         }
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         if (found == classMap.end()) {
-            std::cerr << "Context::get: Cannot find any provided type with interface " << getTypeName<InterfaceType>() << std::endl;
+            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
+                std::cerr << "Context::get: Cannot find any provided type with interface " << getTypeName<InterfaceType>() << std::endl;
+            }
             assert(false);
 
             /*
@@ -170,7 +176,7 @@ private:
 
         template <typename ReturnType, typename ManagedType>
         void createStub(Context &context) {
-            if (DEBUG_CONTEXT) {
+            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
                 std::cout << "Context::createStub: " << getTypeName<ReturnType>() << ", " << getTypeName<ManagedType>() << std::endl;
             }
             assert(!managedInstance);
@@ -183,7 +189,7 @@ private:
 
         template <typename ReturnType, typename ManagedType>
         void destroyStub() {
-            if (DEBUG_CONTEXT) {
+            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
                 std::cout << "Context::destroyStub: " << getTypeName<ReturnType>() << ", " << getTypeName<ManagedType>() << std::endl;
             }
             delete static_cast<const ManagedType *>(managedInstance);
@@ -192,7 +198,7 @@ private:
         }
 
         void error(Context &context) {
-            if (DEBUG_CONTEXT) {
+            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
                 std::cout << "Context::error" << std::endl;
             }
             assert(false);
