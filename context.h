@@ -135,7 +135,7 @@ private:
             assert(!managedInstance);
             assert(!destroyPtr);
 
-            createPtr = &ClassEntry::error;
+            createPtr = &ClassEntry::createBorrowedInstanceError;
             returnInstance = static_cast<const void *>(instance);
             managedInstance = 0;
             isConst = std::is_const<ClassType>::value;
@@ -181,6 +181,7 @@ private:
             }
             assert(!managedInstance);
             assert(!returnInstance);
+            createPtr = &ClassEntry::doubleCreateError;
             ManagedType *instance = new ManagedType(context);
             returnInstance = static_cast<const ReturnType *>(instance);
             managedInstance = static_cast<const void *>(instance);
@@ -197,9 +198,16 @@ private:
             managedInstance = 0;
         }
 
-        void error(Context &context) {
+        void createBorrowedInstanceError(Context &context) {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                std::cout << "Context::error" << std::endl;
+                std::cout << "Context::createBorrowedInstanceError" << std::endl;
+            }
+            assert(false);
+        }
+
+        void doubleCreateError(Context &context) {
+            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
+                std::cout << "Context::doubleCreateError: This is probably because you have a circular dependency" << std::endl;
             }
             assert(false);
         }
