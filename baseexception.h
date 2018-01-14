@@ -4,23 +4,21 @@
 #include <exception>
 #include <string>
 
-#include "jw_util/to_string.h"
-
 namespace jw_util {
 
 class BaseException : public std::exception {
 public:
     virtual const char *what() const noexcept {
-        return str.c_str();
+        return msg.c_str();
     }
 
 protected:
     template <typename... ArgTypes>
-    BaseException(ArgTypes &... args)
-        : str(jw_util::to_string(args...))
+    BaseException(const std::string &msg)
+        : msg(msg)
     {}
 
-    std::string str;
+    std::string msg;
 };
 
 }

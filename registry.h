@@ -2,6 +2,7 @@
 #define JWUTIL_REGISTRY_H
 
 #include <unordered_map>
+#include <spdlog/fmt/fmt.h>
 
 #include "jw_util/baseexception.h"
 #include "jw_util/preparedcontext.h"
@@ -14,7 +15,7 @@ public:
     class AccessException : public BaseException {
     public:
         AccessException(const std::string &key)
-            : BaseException("Could not find key \"", key, "\" in registry")
+            : BaseException(fmt::format("Could not find key \"{}\" in registry", key))
         {}
     };
 

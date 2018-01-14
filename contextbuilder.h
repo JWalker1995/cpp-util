@@ -14,7 +14,6 @@ public:
 
     template <typename InterfaceType, typename ImplementationType = InterfaceType>
     int provide() {
-        std::cout << typeid(InterfaceType).name() << std::endl;
         provisions.push_back(&provideTo<InterfaceType, ImplementationType>);
         return 0;
     }
