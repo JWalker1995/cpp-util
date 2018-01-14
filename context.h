@@ -34,12 +34,12 @@ public:
     }
 
     template <typename InterfaceType>
-    void provideInstance(InterfaceType &instance) {
+    void provideInstance(InterfaceType *instance) {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
             std::cout << "Context::insertInstance: " << getTypeName<InterfaceType>() << std::endl;
         }
         ClassEntry entry;
-        entry.setBorrowedInstance<InterfaceType>(&instance);
+        entry.setBorrowedInstance<InterfaceType>(instance);
         auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), entry);
         assert(inserted.second);
     }
