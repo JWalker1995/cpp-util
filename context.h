@@ -5,6 +5,7 @@
 #define JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE 0
 
 #if JWUTIL_CONTEXT_ENABLE_DEBUG_INFO || JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE
+#include <array>
 #include <iostream>
 #endif
 
