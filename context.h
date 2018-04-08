@@ -219,8 +219,9 @@ private:
     template <typename Type>
     static const char *getTypeName() {
         int status = 0;
-        static thread_local const char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, 0, &status);
+        const char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, 0, &status);
         assert(status == 0);
+        // TODO: Release allocated string
         return realname;
 
     }
