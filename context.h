@@ -19,7 +19,11 @@ namespace jw_util {
 
 class Context {
 public:
-    Context() {}
+    Context() {
+        // Trade memory for speed
+        classMap.max_load_factor(0.1f);
+    }
+
     Context(const Context& other) = delete;
     Context &operator=(const Context &other) = delete;
 
