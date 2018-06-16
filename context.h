@@ -19,21 +19,24 @@ namespace jw_util {
 
 class Context {
 public:
-    Context() {
+    Context(float loadFactor = 0.1f) {
         // Trade memory for speed
-        classMap.max_load_factor(0.1f);
+        classMap.max_load_factor(loadFactor);
     }
 
     Context(const Context& other) = delete;
     Context &operator=(const Context &other) = delete;
 
-    template <typename InterfaceType, typename ImplementationType = InterfaceType>
+    Context(Context&&) = default;
+    Context& operator=(Context&&) = default;
+
+    template <typename InterfaceType, typename ImplementationType = InterfaceType, bool contextConstructor = true>
     void provide() {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
             std::cout << "Context::registerClass: " << getTypeName<InterfaceType>() << ", " << getTypeName<ImplementationType>() << std::endl;
         }
         ClassEntry entry;
-        entry.prepareManagedInstance<InterfaceType, ImplementationType>();
+        entry.prepareManagedInstance<InterfaceType, ImplementationType, contextConstructor>();
         auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), entry);
         assert(inserted.second);
     }
@@ -47,6 +50,14 @@ public:
         entry.setBorrowedInstance<InterfaceType>(instance);
         auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), entry);
         assert(inserted.second);
+    }
+
+    template <typename InterfaceType>
+    bool isProvided() {
+        if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
+            std::cout << "Context::isProvided: " << getTypeName<InterfaceType>() << std::endl;
+        }
+        return classMap.find(std::type_index(typeid(InterfaceType))) != classMap.end();
     }
 
     template <typename InterfaceType>
@@ -147,14 +158,14 @@ private:
             destroyPtr = &ClassEntry::noop;
         }
 
-        template <typename ReturnType, typename ManagedType>
+        template <typename ReturnType, typename ManagedType, bool contextConstructor>
         void prepareManagedInstance() {
             assert(!createPtr);
             assert(!returnInstance);
             assert(!managedInstance);
             assert(!destroyPtr);
 
-            createPtr = &ClassEntry::createStub<ReturnType, ManagedType>;
+            createPtr = &ClassEntry::createStub<ReturnType, ManagedType, contextConstructor>;
             destroyPtr = &ClassEntry::destroyStub<ReturnType, ManagedType>;
         }
 
@@ -179,7 +190,7 @@ private:
         bool isConst;
         void (ClassEntry::*destroyPtr)() = 0;
 
-        template <typename ReturnType, typename ManagedType>
+        template <typename ReturnType, typename ManagedType, bool contextConstructor>
         void createStub(Context &context) {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
                 std::cout << "Context::createStub: " << getTypeName<ReturnType>() << ", " << getTypeName<ManagedType>() << std::endl;
@@ -187,10 +198,20 @@ private:
             assert(!managedInstance);
             assert(!returnInstance);
             createPtr = &ClassEntry::doubleCreateError;
-            ManagedType *instance = new ManagedType(context);
+            ManagedType *instance = construct<ManagedType, contextConstructor>(context);
             returnInstance = static_cast<const ReturnType *>(instance);
             managedInstance = static_cast<const void *>(instance);
             isConst = std::is_const<ManagedType>::value;
+        }
+
+        template <typename ManagedType, bool contextConstructor>
+        static typename std::enable_if<contextConstructor, ManagedType *>::type construct(Context &context) {
+            return new ManagedType(context);
+        }
+
+        template <typename ManagedType, bool contextConstructor>
+        static typename std::enable_if<!contextConstructor, ManagedType *>::type construct(Context &context) {
+            return new ManagedType();
         }
 
         template <typename ReturnType, typename ManagedType>
