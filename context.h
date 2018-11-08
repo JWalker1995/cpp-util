@@ -54,6 +54,16 @@ public:
     }
 
     template <typename InterfaceType>
+    InterfaceType *swapInstance(InterfaceType *newInstance) {
+        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
+            logInfo(this, "Context::swapInstance: ", getTypeName<InterfaceType>());
+        }
+        auto found = classMap.find(std::type_index(typeid(InterfaceType)));
+        assert(found != classMap.end());
+        return found->second.swapBorrowedInstance(newInstance);
+    }
+
+    template <typename InterfaceType>
     bool isProvided() {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
             logInfo(this, "Context::isProvided: ", getTypeName<InterfaceType>());
@@ -157,6 +167,19 @@ private:
             managedInstance = 0;
             isConst = std::is_const<ClassType>::value;
             destroyPtr = &ClassEntry::noop;
+        }
+
+        template <typename ClassType>
+        ClassType *swapBorrowedInstance(ClassType *newInstance) {
+            assert(createPtr == &ClassEntry::createBorrowedInstanceError);
+            assert(returnInstance);
+            assert(!managedInstance);
+            assert(isConst == std::is_const<ClassType>::value);
+            assert(destroyPtr == &ClassEntry::noop);
+
+            ClassType *res = const_cast<ClassType *>(static_cast<const ClassType *>(returnInstance));
+            returnInstance = static_cast<const void *>(newInstance);
+            return res;
         }
 
         template <typename ReturnType, typename ManagedType, bool contextConstructor>
