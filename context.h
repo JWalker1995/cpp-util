@@ -33,8 +33,9 @@ public:
     template <typename InterfaceType, typename ImplementationType = InterfaceType, bool contextConstructor = true>
     void provide() {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-            std::cout << "Context::registerClass: " << getTypeName<InterfaceType>() << ", " << getTypeName<ImplementationType>() << std::endl;
+            logInfo(this, "Context::registerClass: ", getTypeName<InterfaceType>(), ", ", getTypeName<ImplementationType>());
         }
+
         ClassEntry entry;
         entry.prepareManagedInstance<InterfaceType, ImplementationType, contextConstructor>();
         auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), entry);
@@ -44,7 +45,7 @@ public:
     template <typename InterfaceType>
     void provideInstance(InterfaceType *instance) {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-            std::cout << "Context::insertInstance: " << getTypeName<InterfaceType>() << std::endl;
+            logInfo(this, "Context::insertInstance: ", getTypeName<InterfaceType>());
         }
         ClassEntry entry;
         entry.setBorrowedInstance<InterfaceType>(instance);
@@ -55,7 +56,7 @@ public:
     template <typename InterfaceType>
     bool isProvided() {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
-            std::cout << "Context::isProvided: " << getTypeName<InterfaceType>() << std::endl;
+            logInfo(this, "Context::isProvided: ", getTypeName<InterfaceType>());
         }
         return classMap.find(std::type_index(typeid(InterfaceType))) != classMap.end();
     }
@@ -63,12 +64,12 @@ public:
     template <typename InterfaceType>
     InterfaceType &get() {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
-            std::cout << "Context::get: " << getTypeName<InterfaceType>() << std::endl;
+            logInfo(this, "Context::get: ", getTypeName<InterfaceType>());
         }
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         if (found == classMap.end()) {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                std::cerr << "Context::get: Cannot find any provided type with interface " << getTypeName<InterfaceType>() << std::endl;
+                logError(this, "Context::get: Cannot find any provided type with interface ", getTypeName<InterfaceType>());
             }
             assert(false);
 
@@ -98,7 +99,7 @@ public:
         static std::mt19937 randomEngine(randomDevice());
         unsigned int index = std::uniform_int_distribution<unsigned int>(0, classMap.size() - 1)(randomEngine);
         if (DEBUG_CONTEXT) {
-            std::cout << "Context::createSomething: rand(" << classMap.size() << ") -> " << index << std::endl;
+            // std::cout << "Context::createSomething: rand(" << classMap.size() << ") -> " << index << std::endl;
         }
 
         auto offset = std::next(classMap.begin(), index);
@@ -193,7 +194,7 @@ private:
         template <typename ReturnType, typename ManagedType, bool contextConstructor>
         void createStub(Context &context) {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                std::cout << "Context::createStub: " << getTypeName<ReturnType>() << ", " << getTypeName<ManagedType>() << std::endl;
+                logInfo(&context, "Context::createStub: ", getTypeName<ReturnType>(), ", ", getTypeName<ManagedType>());
             }
             assert(!managedInstance);
             assert(!returnInstance);
@@ -217,7 +218,7 @@ private:
         template <typename ReturnType, typename ManagedType>
         void destroyStub() {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                std::cout << "Context::destroyStub: " << getTypeName<ReturnType>() << ", " << getTypeName<ManagedType>() << std::endl;
+                logInfo(0, "Context::destroyStub: ", getTypeName<ReturnType>(), ", ", getTypeName<ManagedType>());
             }
             delete static_cast<const ManagedType *>(managedInstance);
             returnInstance = 0;
@@ -226,14 +227,14 @@ private:
 
         void createBorrowedInstanceError(Context &context) {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                std::cout << "Context::createBorrowedInstanceError" << std::endl;
+                logInfo(&context, "Context::createBorrowedInstanceError");
             }
             assert(false);
         }
 
         void doubleCreateError(Context &context) {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                std::cout << "Context::doubleCreateError: This is probably because you have a circular dependency" << std::endl;
+                logInfo(&context, "Context::doubleCreateError: This is probably because you have a circular dependency");
             }
             assert(false);
         }
@@ -241,14 +242,46 @@ private:
         void noop() {}
     };
 
+    template <typename... ArgTypes>
+    static void logInfo(Context *context, ArgTypes... args) {
+        std::string msg = toString<ArgTypes...>(args...);
+#ifdef SPDLOG_VERSION
+        if (context && context->isProvided<spdlog::logger>()) {
+            context->get<spdlog::logger>().debug(msg);
+            return;
+        }
+#endif
+        std::cout << msg << std::endl;
+    }
+
+    template <typename... ArgTypes>
+    static void logError(Context *context, ArgTypes... args) {
+        std::string msg = toString<ArgTypes...>(args...);
+#ifdef SPDLOG_VERSION
+        if (context && context->isProvided<spdlog::logger>()) {
+            context->get<spdlog::logger>().error(msg);
+            return;
+        }
+#endif
+        std::cerr << msg << std::endl;
+    }
+
+    template <typename FirstArgType, typename... RestArgTypes>
+    static std::string toString(FirstArgType firstArg, RestArgTypes... restArgs) {
+        return std::string(firstArg) + toString<RestArgTypes...>(restArgs...);
+    }
+    template <typename FirstArgType>
+    static std::string toString(FirstArgType firstArg) {
+        return std::string(firstArg);
+    }
+
     template <typename Type>
     static const char *getTypeName() {
-        int status = 0;
-        const char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, 0, &status);
+        static thread_local int status = 0;
+        static thread_local const char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, 0, &status);
         assert(status == 0);
         // TODO: Release allocated string
         return realname;
-
     }
 
     std::vector<ClassEntry *> classOrder;
