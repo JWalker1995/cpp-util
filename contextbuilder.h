@@ -1,25 +1,19 @@
 #ifndef JWUTIL_CONTEXTBUILDER_H
 #define JWUTIL_CONTEXTBUILDER_H
 
-#include "context.h"
-
 namespace jw_util {
 
+template <typename ContextType>
 class ContextBuilder {
 public:
-    static ContextBuilder &getInstance() {
-        static ContextBuilder instance;
-        return instance;
-    }
-
     template <typename InterfaceType, typename ImplementationType = InterfaceType>
     int provide() {
         provisions.push_back(&provideTo<InterfaceType, ImplementationType>);
         return 0;
     }
 
-    void buildTo(jw_util::Context &context) {
-        std::vector<void (*)(jw_util::Context &context)>::const_iterator i = provisions.cbegin();
+    void buildTo(ContextType &context) {
+        typename std::vector<void (*)(ContextType &context)>::const_iterator i = provisions.cbegin();
         while (i != provisions.cend()) {
             (**i)(context);
             i++;
@@ -27,11 +21,11 @@ public:
     }
 
 private:
-    std::vector<void (*)(jw_util::Context &context)> provisions;
+    std::vector<void (*)(ContextType &context)> provisions;
 
     template <typename InterfaceType, typename ImplementationType>
-    static void provideTo(jw_util::Context &context) {
-        context.provide<InterfaceType, ImplementationType>();
+    static void provideTo(ContextType &context) {
+        context.template provide<InterfaceType, ImplementationType>();
     }
 };
 

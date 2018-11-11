@@ -3,10 +3,15 @@
 
 #define JWUTIL_CONTEXT_ENABLE_DEBUG_INFO 1
 #define JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE 0
+#define JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION 1
 
 #if JWUTIL_CONTEXT_ENABLE_DEBUG_INFO || JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE
 #include <array>
 #include <iostream>
+#endif
+
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+#include <fstream>
 #endif
 
 #include <assert.h>
@@ -17,6 +22,7 @@
 
 namespace jw_util {
 
+template <typename DerivedType>
 class Context {
 public:
     Context(float loadFactor = 0.1f) {
@@ -37,7 +43,7 @@ public:
         }
 
         ClassEntry entry;
-        entry.prepareManagedInstance<InterfaceType, ImplementationType, contextConstructor>();
+        entry.template prepareManagedInstance<InterfaceType, ImplementationType, contextConstructor>();
         auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), entry);
         assert(inserted.second);
     }
@@ -48,7 +54,7 @@ public:
             logInfo(this, "Context::insertInstance: ", getTypeName<InterfaceType>());
         }
         ClassEntry entry;
-        entry.setBorrowedInstance<InterfaceType>(instance);
+        entry.template setBorrowedInstance<InterfaceType>(instance);
         auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), entry);
         assert(inserted.second);
     }
@@ -90,10 +96,10 @@ public:
             */
         }
         if (!found->second.hasInstance()) {
-            found->second.createManagedInstance(*this);
+            found->second.createManagedInstance(this);
             classOrder.push_back(&found->second);
         }
-        return *found->second.getInstance<InterfaceType>();
+        return *found->second.template getInstance<InterfaceType>();
     }
 
     /*
@@ -133,7 +139,14 @@ public:
     */
 
     ~Context() {
-        std::vector<ClassEntry *>::reverse_iterator i = classOrder.rbegin();
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+        std::ofstream file;
+        file.open(getStructFilename());
+        file << generateStruct();
+        file.close();
+#endif
+
+        typename std::vector<ClassEntry *>::reverse_iterator i = classOrder.rbegin();
         while (i != classOrder.rend()) {
             ClassEntry &entry = **i;
             entry.release();
@@ -152,6 +165,11 @@ private:
         ClassType *getInstance() const {
             assert(returnInstance);
             assert(std::is_const<ClassType>::value || !isConst);
+
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+            getCount++;
+#endif
+
             return const_cast<ClassType *>(static_cast<const ClassType *>(returnInstance));
         }
 
@@ -161,6 +179,11 @@ private:
             assert(!returnInstance);
             assert(!managedInstance);
             assert(!destroyPtr);
+
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+            typeName = getTypeName<ClassType>();
+            setBorrowedCount++;
+#endif
 
             createPtr = &ClassEntry::createBorrowedInstanceError;
             returnInstance = static_cast<const void *>(instance);
@@ -177,7 +200,11 @@ private:
             assert(isConst == std::is_const<ClassType>::value);
             assert(destroyPtr == &ClassEntry::noop);
 
-            ClassType *res = const_cast<ClassType *>(static_cast<const ClassType *>(returnInstance));
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+            swapBorrowedCount++;
+#endif
+
+            ClassType *res = getInstance<ClassType>();
             returnInstance = static_cast<const void *>(newInstance);
             return res;
         }
@@ -189,15 +216,24 @@ private:
             assert(!managedInstance);
             assert(!destroyPtr);
 
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+            typeName = getTypeName<ReturnType>();
+            prepareManagedCount++;
+#endif
+
             createPtr = &ClassEntry::createStub<ReturnType, ManagedType, contextConstructor>;
             destroyPtr = &ClassEntry::destroyStub<ReturnType, ManagedType>;
         }
 
-        void createManagedInstance(Context &context) {
+        void createManagedInstance(Context *context) {
             assert(createPtr);
             assert(!returnInstance);
             assert(!managedInstance);
             assert(destroyPtr);
+
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+            createManagedCount++;
+#endif
 
             (this->*createPtr)(context);
             createPtr = 0;
@@ -207,17 +243,26 @@ private:
             (this->*destroyPtr)();
         }
 
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+        const char *typeName = 0;
+        mutable unsigned int getCount = 0;
+        mutable unsigned int setBorrowedCount = 0;
+        mutable unsigned int swapBorrowedCount = 0;
+        mutable unsigned int prepareManagedCount = 0;
+        mutable unsigned int createManagedCount = 0;
+#endif
+
     private:
-        void (ClassEntry::*createPtr)(Context &context) = 0;
+        void (ClassEntry::*createPtr)(Context *context) = 0;
         const void *returnInstance = 0;
         const void *managedInstance = 0;
         bool isConst;
         void (ClassEntry::*destroyPtr)() = 0;
 
         template <typename ReturnType, typename ManagedType, bool contextConstructor>
-        void createStub(Context &context) {
+        void createStub(Context *context) {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                logInfo(&context, "Context::createStub: ", getTypeName<ReturnType>(), ", ", getTypeName<ManagedType>());
+                logInfo(context, "Context::createStub: ", getTypeName<ReturnType>(), ", ", getTypeName<ManagedType>());
             }
             assert(!managedInstance);
             assert(!returnInstance);
@@ -229,12 +274,12 @@ private:
         }
 
         template <typename ManagedType, bool contextConstructor>
-        static typename std::enable_if<contextConstructor, ManagedType *>::type construct(Context &context) {
-            return new ManagedType(context);
+        static typename std::enable_if<contextConstructor, ManagedType *>::type construct(Context *context) {
+            return new ManagedType(*static_cast<DerivedType *>(context));
         }
 
         template <typename ManagedType, bool contextConstructor>
-        static typename std::enable_if<!contextConstructor, ManagedType *>::type construct(Context &context) {
+        static typename std::enable_if<!contextConstructor, ManagedType *>::type construct(Context *context) {
             return new ManagedType();
         }
 
@@ -248,22 +293,67 @@ private:
             managedInstance = 0;
         }
 
-        void createBorrowedInstanceError(Context &context) {
+        void createBorrowedInstanceError(Context *context) {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                logInfo(&context, "Context::createBorrowedInstanceError");
+                logInfo(context, "Context::createBorrowedInstanceError");
             }
             assert(false);
         }
 
-        void doubleCreateError(Context &context) {
+        void doubleCreateError(Context *context) {
             if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                logInfo(&context, "Context::doubleCreateError: This is probably because you have a circular dependency");
+                logInfo(context, "Context::doubleCreateError: This is probably because you have a circular dependency");
             }
             assert(false);
         }
 
         void noop() {}
     };
+
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+    std::string generateStruct() const {
+        std::string className = getTypeName<DerivedType>();
+
+        std::string res;
+        res += "class " + className + " {\n";
+        res += "public:\n";
+
+        unsigned int varIndex = 0;
+        typename std::vector<ClassEntry *>::const_iterator i = classOrder.cbegin();
+        while (i != classOrder.cend()) {
+            const ClassEntry &entry = **i;
+
+            std::string indent = "    ";
+
+            res += indent + entry.typeName + " *_" + std::to_string(varIndex) + ";\n";
+            res += indent + "template <>\n";
+            res += indent + entry.typeName + " *get<" + entry.typeName + ">() { return _" + std::to_string(varIndex) + "; }\n";
+
+            varIndex++;
+            i++;
+        }
+
+        res += "};\n";
+        return res;
+    }
+
+    std::string getStructFilename() const {
+        std::string className = getTypeName<DerivedType>();
+        std::string::iterator i = className.begin();
+        while (i != className.end()) {
+            bool isLetterLc = *i >= 'a' && *i <= 'z';
+            bool isLetterUc = *i >= 'A' && *i <= 'Z';
+            bool isNumber = *i >= '0' && *i <= '9';
+            bool isSymbol = *i == '_';
+            if (!isLetterLc && !isLetterUc && !isNumber && !isSymbol) {
+                *i = '_';
+            }
+            i++;
+        }
+        className += ".gen.h";
+        return className;
+    }
+#endif
 
     template <typename... ArgTypes>
     static void logInfo(Context *context, ArgTypes... args) {
