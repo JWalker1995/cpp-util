@@ -70,6 +70,18 @@ public:
     }
 
     template <typename InterfaceType>
+    InterfaceType *removeInstance() {
+        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
+            logInfo(this, "Context::removeInstance: ", getTypeName<InterfaceType>());
+        }
+        auto found = classMap.find(std::type_index(typeid(InterfaceType)));
+        assert(found != classMap.end());
+        InterfaceType *res = found->second.swapBorrowedInstance(0);
+        classMap.erase(found);
+        return res;
+    }
+
+    template <typename InterfaceType>
     bool isProvided() {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
             logInfo(this, "Context::isProvided: ", getTypeName<InterfaceType>());
