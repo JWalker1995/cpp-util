@@ -36,10 +36,11 @@ public:
     Context(Context&&) = default;
     Context& operator=(Context&&) = default;
 
+
     template <typename InterfaceType, typename ImplementationType = InterfaceType, bool contextConstructor = true>
     void provide() {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-            logInfo(this, "Context::registerClass: ", getTypeName<InterfaceType>(), ", ", getTypeName<ImplementationType>());
+            logInfo(this, "Context::provide: ", getTypeName<InterfaceType>(), ", ", getTypeName<ImplementationType>());
         }
 
         ClassEntry entry;
@@ -47,6 +48,25 @@ public:
         auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), entry);
         assert(inserted.second);
     }
+
+    template <typename InterfaceType>
+    void retract() {
+        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
+            logInfo(this, "Context::retract: ", getTypeName<InterfaceType>());
+        }
+
+        auto found = classMap.find(std::type_index(typeid(InterfaceType)));
+        assert(found != classMap.end());
+
+        auto found2 = std::find(classOrder.cbegin(), classOrder.cend(), &found->second);
+        assert(found2 != classOrder.cend());
+
+        classOrder.erase(found2);
+
+        found->second.release();
+        classMap.erase(found);
+    }
+
 
     template <typename InterfaceType>
     void provideInstance(InterfaceType *instance) {
@@ -80,6 +100,7 @@ public:
         classMap.erase(found);
         return res;
     }
+
 
     template <typename InterfaceType>
     bool isProvided() {
