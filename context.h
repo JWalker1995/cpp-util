@@ -81,7 +81,7 @@ public:
 
     template <typename InterfaceType>
     InterfaceType *swapInstance(InterfaceType *newInstance) {
-        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
+        if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
             logInfo(this, "Context::swapInstance: ", getTypeName<InterfaceType>());
         }
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
