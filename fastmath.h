@@ -100,6 +100,17 @@ public:
         return ((num - 1) & num) == 0;
     }
 
+    static constexpr unsigned int next_power_of_2(unsigned int v) {
+        v--;
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        v++;
+        return v;
+    }
+
 #ifdef FASTMATH_ENABLE_INTINVERSE_FLOAT
     template <typename T>
     static float int_inverse_float(T num)
