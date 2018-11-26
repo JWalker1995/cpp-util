@@ -9,14 +9,14 @@ namespace jw_util {
 
 template <unsigned int size>
 class Bitset {
-    typedef std::conditional<size <= 8,
+    typedef typename std::conditional<size <= 8,
         std::uint_fast8_t,
-        std::conditional<size <= 16,
+        typename std::conditional<size <= 16,
             std::uint_fast16_t,
-            std::conditional<size <= 32,
+            typename std::conditional<size <= 32,
                 std::uint_fast32_t,
                 std::uint_fast64_t
-        >>> WordType;
+        >::type>::type>::type WordType;
 
     static constexpr unsigned int wordBits = sizeof(WordType) * CHAR_BIT;
     static constexpr unsigned int numWords = (size + wordBits - 1) / wordBits;
@@ -80,7 +80,22 @@ public:
         }
     }
 
-    unsigned int getCount() const {
+    template <bool value>
+    void set(unsigned int index) {
+        assert(index < size);
+        if (value) {
+            words[index / wordBits] |= static_cast<WordType>(1) << (index % wordBits);
+        } else {
+            words[index / wordBits] &= ~(static_cast<WordType>(1) << (index % wordBits));
+        }
+    }
+
+    bool get(unsigned int index) const {
+        assert(index < size);
+        return (words[index / wordBits] >> (index % wordBits)) & 0x1;
+    }
+
+    unsigned int count() const {
         unsigned int count = 0;
 
         for (unsigned int i = 0; i < numWords; i++) {
@@ -90,27 +105,58 @@ public:
         return count;
     }
 
-    unsigned int getFirstIndex() const {
+    bool none() const {
         for (unsigned int i = 0; i < numWords; i++) {
             if (words[i]) {
-                return getLsbIndex(words[i]) + i * wordBits;
+                return false;
             }
         }
+        return true;
+    }
 
-#ifndef NDEBUG
-        assert(false);
-#else
-        __builtin_unreachable();
-#endif
+    Bitset<size> operator~() const {
+        Bitset<size> res;
+        for (unsigned int i = 0; i < numWords; i++) {
+            res.words[i] = ~words[i];
+        }
+        return res;
+    }
+
+    Bitset<size> operator&(const Bitset<size> &other) const {
+        Bitset<size> res;
+        for (unsigned int i = 0; i < numWords; i++) {
+            res.words[i] = words[i] & other.words[i];
+        }
+        return res;
+    }
+
+    Bitset<size> operator|(const Bitset<size> &other) const {
+        Bitset<size> res;
+        for (unsigned int i = 0; i < numWords; i++) {
+            res.words[i] = words[i] | other.words[i];
+        }
+        return res;
+    }
+
+    Bitset<size> operator^(const Bitset<size> &other) const {
+        Bitset<size> res;
+        for (unsigned int i = 0; i < numWords; i++) {
+            res.words[i] = words[i] ^ other.words[i];
+        }
+        return res;
     }
 
 private:
     WordType words[numWords];
 
+    static unsigned int getLsbIndex(unsigned char word) { return getLsbIndex(static_cast<unsigned int>(word)); }
+    static unsigned int getLsbIndex(unsigned short word) { return getLsbIndex(static_cast<unsigned int>(word)); }
     static unsigned int getLsbIndex(unsigned int word) { return __builtin_ctz(word); }
     static unsigned int getLsbIndex(unsigned long word) { return __builtin_ctzl(word); }
     static unsigned int getLsbIndex(unsigned long long word) { return __builtin_ctzll(word); }
 
+    static unsigned int getPopcount(unsigned char word) { return getPopcount(static_cast<unsigned int>(word)); }
+    static unsigned int getPopcount(unsigned short word) { return getPopcount(static_cast<unsigned int>(word)); }
     static unsigned int getPopcount(unsigned int word) { return __builtin_popcount(word); }
     static unsigned int getPopcount(unsigned long word) { return __builtin_popcountl(word); }
     static unsigned int getPopcount(unsigned long long word) { return __builtin_popcountll(word); }
