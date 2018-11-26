@@ -146,6 +146,19 @@ public:
         return res;
     }
 
+    bool operator==(const Bitset<size> &other) const {
+        for (unsigned int i = 0; i < numWords; i++) {
+            if (words[i] != other.words[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool operator!=(const Bitset<size> &other) const {
+        return !(*this == other);
+    }
+
 private:
     WordType words[numWords];
 
