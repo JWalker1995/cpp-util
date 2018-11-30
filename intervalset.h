@@ -20,6 +20,11 @@ public:
         {
             return offset < interval.offset;
         }
+
+        bool operator<(Type val) const
+        {
+            return offset < val;
+        }
     };
 
     typedef std::set<Interval> Set;
@@ -65,6 +70,36 @@ public:
 
             next = set.erase(next);
         }
+    }
+
+    void remove(Type offset, Type limit)
+    {
+        typename Set::iterator next = set.upper_bound(offset);
+        typename Set::iterator prev = next;
+        if (prev != set.begin() && (--prev)->limit > offset) {
+            prev->limit = offset;
+        }
+
+        while (next != set.end() && next->offset < limit) {
+            if (next->limit > limit) {
+                next->offset = limit;
+                break;
+            } else {
+                next = set.erase(next);
+            }
+        }
+    }
+
+    bool intersects(Type offset, Type limit)
+    {
+        typename Set::iterator i = set.upper_bound(offset);
+        if (i != set.end() && i->offset < limit) {
+            return true;
+        }
+        if (i != set.begin() && (--i)->limit > offset) {
+            return true;
+        }
+        return false;
     }
 
     void merge(Type max_gap)
