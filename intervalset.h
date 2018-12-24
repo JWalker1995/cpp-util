@@ -154,6 +154,7 @@ public:
         set.clear();
     }
 
+    Set &get_set() {return set;}
     const Set &get_set() const {return set;}
     typename Set::size_type size() const {return set.size();}
     bool empty() const {return set.empty();}
