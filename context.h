@@ -70,8 +70,9 @@ public:
 
     template <typename InterfaceType>
     void provideInstance(InterfaceType *instance) {
+        assert(instance);
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-            logInfo(this, "Context::insertInstance: ", getTypeName<InterfaceType>());
+            logInfo(this, "Context::provideInstance: ", getTypeName<InterfaceType>());
         }
         ClassEntry entry;
         entry.template setBorrowedInstance<InterfaceType>(instance);
@@ -81,6 +82,7 @@ public:
 
     template <typename InterfaceType>
     InterfaceType *swapInstance(InterfaceType *newInstance) {
+        assert(newInstance);
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
             logInfo(this, "Context::swapInstance: ", getTypeName<InterfaceType>());
         }
@@ -133,6 +135,14 @@ public:
             classOrder.push_back(&found->second);
         }
         return *found->second.template getInstance<InterfaceType>();
+    }
+
+    unsigned int getManagedTypeCount() const {
+        return classOrder.size();
+    }
+
+    unsigned int getTotalTypeCount() const {
+        return classMap.size();
     }
 
     /*
@@ -426,7 +436,7 @@ private:
         static thread_local int status = 0;
         static thread_local const char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, 0, &status);
         assert(status == 0);
-        // TODO: Release allocated string
+        // TODO: Free memory
         return realname;
     }
 
