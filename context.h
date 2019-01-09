@@ -105,9 +105,9 @@ public:
 
 
     template <typename InterfaceType>
-    bool isProvided() {
+    bool has() {
         if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
-            logInfo(this, "Context::isProvided: ", getTypeName<InterfaceType>());
+            logInfo(this, "Context::has: ", getTypeName<InterfaceType>());
         }
         return classMap.find(std::type_index(typeid(InterfaceType))) != classMap.end();
     }
