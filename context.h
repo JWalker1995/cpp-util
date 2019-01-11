@@ -88,7 +88,7 @@ public:
         }
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         assert(found != classMap.end());
-        return found->second.swapBorrowedInstance(newInstance);
+        return found->second.template swapBorrowedInstance<InterfaceType>(newInstance);
     }
 
     template <typename InterfaceType>
@@ -98,7 +98,7 @@ public:
         }
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         assert(found != classMap.end());
-        InterfaceType *res = found->second.swapBorrowedInstance(0);
+        InterfaceType *res = found->second.template swapBorrowedInstance<InterfaceType>(0);
         classMap.erase(found);
         return res;
     }
@@ -402,7 +402,7 @@ private:
     static void logInfo(Context *context, ArgTypes... args) {
         std::string msg = toString<ArgTypes...>(args...);
 #ifdef SPDLOG_VERSION
-        if (context && context->isProvided<spdlog::logger>()) {
+        if (context && context->has<spdlog::logger>()) {
             context->get<spdlog::logger>().debug(msg);
             return;
         }
@@ -414,7 +414,7 @@ private:
     static void logError(Context *context, ArgTypes... args) {
         std::string msg = toString<ArgTypes...>(args...);
 #ifdef SPDLOG_VERSION
-        if (context && context->isProvided<spdlog::logger>()) {
+        if (context && context->has<spdlog::logger>()) {
             context->get<spdlog::logger>().error(msg);
             return;
         }
