@@ -19,7 +19,7 @@ template <typename DerivedType>
 class Context {
 public:
     enum class LogLevel {
-        Debug,
+        Trace,
         Info,
         Error,
     };
@@ -77,7 +77,7 @@ public:
     template <typename InterfaceType>
     InterfaceType *swapInstance(InterfaceType *newInstance) {
         assert(newInstance);
-        emitLog(LogLevel::Debug, "Context::swapInstance: " + getTypeName<InterfaceType>());
+        emitLog(LogLevel::Trace, "Context::swapInstance: " + getTypeName<InterfaceType>());
 
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         assert(found != classMap.end());
@@ -98,14 +98,14 @@ public:
 
     template <typename InterfaceType>
     bool has() {
-        emitLog(LogLevel::Debug, "Context::has: " + getTypeName<InterfaceType>());
+        emitLog(LogLevel::Trace, "Context::has: " + getTypeName<InterfaceType>());
 
         return classMap.find(std::type_index(typeid(InterfaceType))) != classMap.end();
     }
 
     template <typename InterfaceType>
     InterfaceType &get() {
-        emitLog(LogLevel::Debug, "Context::get: " + getTypeName<InterfaceType>());
+        emitLog(LogLevel::Trace, "Context::get: " + getTypeName<InterfaceType>());
 
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         if (found == classMap.end()) {
