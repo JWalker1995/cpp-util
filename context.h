@@ -1,14 +1,7 @@
 #ifndef JWUTIL_CONTEXT_H
 #define JWUTIL_CONTEXT_H
 
-#define JWUTIL_CONTEXT_ENABLE_DEBUG_INFO 1
-#define JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE 0
 #define JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION 1
-
-#if JWUTIL_CONTEXT_ENABLE_DEBUG_INFO || JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE
-#include <array>
-#include <iostream>
-#endif
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
 #include <fstream>
@@ -25,6 +18,12 @@ namespace jw_util {
 template <typename DerivedType>
 class Context {
 public:
+    enum class LogLevel {
+        Debug,
+        Info,
+        Error,
+    };
+
     Context(float loadFactor = 0.1f) {
         // Trade memory for speed
         classMap.max_load_factor(loadFactor);
@@ -39,9 +38,7 @@ public:
 
     template <typename InterfaceType, typename ImplementationType = InterfaceType, bool contextConstructor = true>
     void provide() {
-        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-            logInfo(this, "Context::provide: ", getTypeName<InterfaceType>(), ", ", getTypeName<ImplementationType>());
-        }
+        emitLog(LogLevel::Info, "Context::provide: " + getTypeName<InterfaceType>() + ", " + getTypeName<ImplementationType>());
 
         ClassEntry entry;
         entry.template prepareManagedInstance<InterfaceType, ImplementationType, contextConstructor>();
@@ -51,9 +48,7 @@ public:
 
     template <typename InterfaceType>
     void retract() {
-        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-            logInfo(this, "Context::retract: ", getTypeName<InterfaceType>());
-        }
+        emitLog(LogLevel::Info, "Context::retract: " + getTypeName<InterfaceType>());
 
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         assert(found != classMap.end());
@@ -63,7 +58,7 @@ public:
 
         classOrder.erase(found2);
 
-        found->second.release();
+        found->second.release(this);
         classMap.erase(found);
     }
 
@@ -71,9 +66,8 @@ public:
     template <typename InterfaceType>
     void provideInstance(InterfaceType *instance) {
         assert(instance);
-        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-            logInfo(this, "Context::provideInstance: ", getTypeName<InterfaceType>());
-        }
+        emitLog(LogLevel::Info, "Context::provideInstance: " + getTypeName<InterfaceType>());
+
         ClassEntry entry;
         entry.template setBorrowedInstance<InterfaceType>(instance);
         auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), entry);
@@ -83,9 +77,8 @@ public:
     template <typename InterfaceType>
     InterfaceType *swapInstance(InterfaceType *newInstance) {
         assert(newInstance);
-        if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
-            logInfo(this, "Context::swapInstance: ", getTypeName<InterfaceType>());
-        }
+        emitLog(LogLevel::Debug, "Context::swapInstance: " + getTypeName<InterfaceType>());
+
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         assert(found != classMap.end());
         return found->second.template swapBorrowedInstance<InterfaceType>(newInstance);
@@ -93,9 +86,8 @@ public:
 
     template <typename InterfaceType>
     InterfaceType *removeInstance() {
-        if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-            logInfo(this, "Context::removeInstance: ", getTypeName<InterfaceType>());
-        }
+        emitLog(LogLevel::Info, "Context::removeInstance: " + getTypeName<InterfaceType>());
+
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         assert(found != classMap.end());
         InterfaceType *res = found->second.template swapBorrowedInstance<InterfaceType>(0);
@@ -106,22 +98,18 @@ public:
 
     template <typename InterfaceType>
     bool has() {
-        if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
-            logInfo(this, "Context::has: ", getTypeName<InterfaceType>());
-        }
+        emitLog(LogLevel::Debug, "Context::has: " + getTypeName<InterfaceType>());
+
         return classMap.find(std::type_index(typeid(InterfaceType))) != classMap.end();
     }
 
     template <typename InterfaceType>
     InterfaceType &get() {
-        if (JWUTIL_CONTEXT_ENABLE_DEBUG_VERBOSE) {
-            logInfo(this, "Context::get: ", getTypeName<InterfaceType>());
-        }
+        emitLog(LogLevel::Debug, "Context::get: " + getTypeName<InterfaceType>());
+
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         if (found == classMap.end()) {
-            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                logError(this, "Context::get: Cannot find any provided type with interface ", getTypeName<InterfaceType>());
-            }
+            emitLog(LogLevel::Error, "Context::get: Cannot find any provided type with interface " + getTypeName<InterfaceType>());
             assert(false);
 
             /*
@@ -192,7 +180,7 @@ public:
         typename std::vector<ClassEntry *>::reverse_iterator i = classOrder.rbegin();
         while (i != classOrder.rend()) {
             ClassEntry &entry = **i;
-            entry.release();
+            entry.release(this);
             i++;
         }
     }
@@ -282,12 +270,12 @@ private:
             createPtr = 0;
         }
 
-        void release() {
-            (this->*destroyPtr)();
+        void release(Context *context) {
+            (this->*destroyPtr)(context);
         }
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
-        const char *typeName = 0;
+        std::string typeName;
         mutable unsigned int getCount = 0;
         mutable unsigned int setBorrowedCount = 0;
         mutable unsigned int swapBorrowedCount = 0;
@@ -297,16 +285,15 @@ private:
 
     private:
         void (ClassEntry::*createPtr)(Context *context) = 0;
+        void (ClassEntry::*destroyPtr)(Context *context) = 0;
         const void *returnInstance = 0;
         const void *managedInstance = 0;
         bool isConst;
-        void (ClassEntry::*destroyPtr)() = 0;
 
         template <typename ReturnType, typename ManagedType, bool contextConstructor>
         void createStub(Context *context) {
-            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                logInfo(context, "Context::createStub: ", getTypeName<ReturnType>(), ", ", getTypeName<ManagedType>());
-            }
+            context->emitLog(LogLevel::Info, "Context::createStub: " + getTypeName<ReturnType>() + ", " + getTypeName<ManagedType>());
+
             assert(!managedInstance);
             assert(!returnInstance);
             createPtr = &ClassEntry::doubleCreateError;
@@ -327,30 +314,27 @@ private:
         }
 
         template <typename ReturnType, typename ManagedType>
-        void destroyStub() {
-            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                logInfo(0, "Context::destroyStub: ", getTypeName<ReturnType>(), ", ", getTypeName<ManagedType>());
-            }
+        void destroyStub(Context *context) {
+            context->emitLog(LogLevel::Info, "Context::destroyStub: " + getTypeName<ReturnType>() + ", " + getTypeName<ManagedType>());
+
             delete static_cast<const ManagedType *>(managedInstance);
             returnInstance = 0;
             managedInstance = 0;
         }
 
         void createBorrowedInstanceError(Context *context) {
-            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                logInfo(context, "Context::createBorrowedInstanceError");
-            }
+            context->emitLog(LogLevel::Error, "Context::createBorrowedInstanceError");
             assert(false);
         }
 
         void doubleCreateError(Context *context) {
-            if (JWUTIL_CONTEXT_ENABLE_DEBUG_INFO) {
-                logInfo(context, "Context::doubleCreateError: This is probably because you have a circular dependency");
-            }
+            context->emitLog(LogLevel::Error, "Context::doubleCreateError: This is probably because you have a circular dependency");
             assert(false);
         }
 
-        void noop() {}
+        void noop(Context *context) {
+            (void) context;
+        }
     };
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
@@ -398,46 +382,22 @@ private:
     }
 #endif
 
-    template <typename... ArgTypes>
-    static void logInfo(Context *context, ArgTypes... args) {
-        std::string msg = toString<ArgTypes...>(args...);
-#ifdef SPDLOG_VERSION
-        if (context && context->has<spdlog::logger>()) {
-            context->get<spdlog::logger>().debug(msg);
-            return;
-        }
-#endif
-        std::cout << msg << std::endl;
-    }
-
-    template <typename... ArgTypes>
-    static void logError(Context *context, ArgTypes... args) {
-        std::string msg = toString<ArgTypes...>(args...);
-#ifdef SPDLOG_VERSION
-        if (context && context->has<spdlog::logger>()) {
-            context->get<spdlog::logger>().error(msg);
-            return;
-        }
-#endif
-        std::cerr << msg << std::endl;
-    }
-
-    template <typename FirstArgType, typename... RestArgTypes>
-    static std::string toString(FirstArgType firstArg, RestArgTypes... restArgs) {
-        return std::string(firstArg) + toString<RestArgTypes...>(restArgs...);
-    }
-    template <typename FirstArgType>
-    static std::string toString(FirstArgType firstArg) {
-        return std::string(firstArg);
+    void emitLog(LogLevel level, const std::string &msg) {
+        static_cast<DerivedType *>(this)->log(level, msg);
     }
 
     template <typename Type>
-    static const char *getTypeName() {
-        static thread_local int status = 0;
-        static thread_local const char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, 0, &status);
+    static std::string getTypeName() {
+        int status = 0;
+        std::size_t length;
+        char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, &length, &status);
         assert(status == 0);
-        // TODO: Free memory
-        return realname;
+
+        std::string str(realname, length - 1);
+
+        std::free(realname);
+
+        return str;
     }
 
     std::vector<ClassEntry *> classOrder;
