@@ -32,8 +32,8 @@ public:
     Context(const Context& other) = delete;
     Context &operator=(const Context &other) = delete;
 
-    Context(Context&&) = default;
-    Context& operator=(Context&&) = default;
+    Context(Context&&) = delete;
+    Context& operator=(Context&&) = delete;
 
 
     template <typename InterfaceType, typename ImplementationType = InterfaceType, bool contextConstructor = true>
@@ -169,20 +169,14 @@ public:
     }
     */
 
-    ~Context() {
-#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
-        std::ofstream file;
-        file.open(getStructFilename());
-        file << generateStruct();
-        file.close();
-#endif
+    void reset() {
+        runDestructors();
+        classOrder.clear();
+        classMap.clear();
+    }
 
-        typename std::vector<ClassEntry *>::reverse_iterator i = classOrder.rbegin();
-        while (i != classOrder.rend()) {
-            ClassEntry &entry = **i;
-            entry.release(this);
-            i++;
-        }
+    ~Context() {
+        runDestructors();
     }
 
 private:
@@ -336,6 +330,22 @@ private:
             (void) context;
         }
     };
+
+    void runDestructors() {
+#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
+        std::ofstream file;
+        file.open(getStructFilename());
+        file << generateStruct();
+        file.close();
+#endif
+
+        typename std::vector<ClassEntry *>::reverse_iterator i = classOrder.rbegin();
+        while (i != classOrder.rend()) {
+            ClassEntry &entry = **i;
+            entry.release(this);
+            i++;
+        }
+    }
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
     std::string generateStruct() const {
