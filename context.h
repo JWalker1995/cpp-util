@@ -21,6 +21,7 @@ public:
     enum class LogLevel {
         Trace,
         Info,
+        Warning,
         Error,
     };
 
