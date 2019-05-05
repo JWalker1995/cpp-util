@@ -1,6 +1,9 @@
 #ifndef JWUTIL_CONTEXTBUILDER_H
 #define JWUTIL_CONTEXTBUILDER_H
 
+#include <vector>
+#include <algorithm>
+
 namespace jw_util {
 
 template <typename ContextType>
@@ -12,12 +15,23 @@ public:
         return 0;
     }
 
+    template <typename InterfaceType, typename ImplementationType = InterfaceType>
+    void retract() {
+        typename std::vector<void (*)(ContextType &context)>::iterator pos = std::find(provisions.begin(), provisions.end(), &provideTo<InterfaceType, ImplementationType>);
+        assert(pos != provisions.end());
+        provisions.erase(pos);
+    }
+
     void buildTo(ContextType &context) {
         typename std::vector<void (*)(ContextType &context)>::const_iterator i = provisions.cbegin();
         while (i != provisions.cend()) {
             (**i)(context);
             i++;
         }
+    }
+
+    std::size_t getSize() const {
+        return provisions.size();
     }
 
 private:

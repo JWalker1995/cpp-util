@@ -12,6 +12,7 @@
 #include <vector>
 #include <unordered_map>
 #include <cxxabi.h>
+#include <random>
 
 namespace jw_util {
 
@@ -124,6 +125,33 @@ public:
             classOrder.push_back(&found->second);
         }
         return *found->second.template getInstance<InterfaceType>();
+    }
+
+    void createAll(unsigned int seed) {
+        if (classMap.empty()) {
+            return;
+        }
+
+        std::mt19937 randomEngine(seed);
+
+        while (true) {
+            assert(!classMap.empty());
+            unsigned int index = std::uniform_int_distribution<unsigned int>(0, classMap.size() - 1)(randomEngine);
+
+            auto offset = std::next(classMap.begin(), index);
+            auto i = offset;
+            while (i->second.hasInstance()) {
+                i++;
+                if (i == classMap.end()) {
+                    i = classMap.begin();
+                } else if (i == offset) {
+                    return;
+                }
+            }
+
+            i->second.createManagedInstance(this);
+            classOrder.push_back(&i->second);
+        }
     }
 
     unsigned int getManagedTypeCount() const {
