@@ -12,7 +12,6 @@
 #include <vector>
 #include <unordered_map>
 #include <cxxabi.h>
-#include <random>
 
 namespace jw_util {
 
@@ -127,30 +126,17 @@ public:
         return *found->second.template getInstance<InterfaceType>();
     }
 
-    void createAll(unsigned int seed) {
-        if (classMap.empty()) {
-            return;
-        }
+    void createAll() {
+        unsigned int size = classMap.size();
 
-        std::mt19937 randomEngine(seed);
-
-        while (true) {
-            assert(!classMap.empty());
-            unsigned int index = std::uniform_int_distribution<unsigned int>(0, classMap.size() - 1)(randomEngine);
-
-            auto offset = std::next(classMap.begin(), index);
-            auto i = offset;
-            while (i->second.hasInstance()) {
-                i++;
-                if (i == classMap.end()) {
-                    i = classMap.begin();
-                } else if (i == offset) {
-                    return;
-                }
+        typename std::unordered_map<std::type_index, ClassEntry>::iterator i = classMap.begin();
+        while (i != classMap.end()) {
+            if (!i->second.hasInstance()) {
+                i->second.createManagedInstance(this);
+                classOrder.push_back(&i->second);
+                assert(classMap.size() == size);
             }
-
-            i->second.createManagedInstance(this);
-            classOrder.push_back(&i->second);
+            i++;
         }
     }
 
