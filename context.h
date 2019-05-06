@@ -1,7 +1,7 @@
 #ifndef JWUTIL_CONTEXT_H
 #define JWUTIL_CONTEXT_H
 
-#define JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION 1
+#define JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION 0
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
 #include <fstream>
@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <typeindex>
 #include <vector>
+#include <string>
 #include <unordered_map>
 #include <cxxabi.h>
 
