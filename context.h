@@ -34,8 +34,8 @@ public:
     Context(const Context& other) = delete;
     Context &operator=(const Context &other) = delete;
 
-    Context(Context&&) = default;
-    Context& operator=(Context&&) = default;
+    Context(Context&&) = delete;
+    Context& operator=(Context&&) = delete;
 
 
     template <typename InterfaceType, typename ImplementationType = InterfaceType, bool contextConstructor = true>
