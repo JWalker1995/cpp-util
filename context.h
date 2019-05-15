@@ -107,7 +107,8 @@ public:
 
     template <typename InterfaceType>
     InterfaceType &get() {
-        emitLog(LogLevel::Trace, "Context::get: " + getTypeName<InterfaceType>());
+        // Not even trace level
+        // emitLog(LogLevel::Trace, "Context::get: " + getTypeName<InterfaceType>());
 
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         if (found == classMap.end()) {
@@ -413,7 +414,7 @@ private:
     }
 
     template <typename Type>
-    static std::string getTypeName() {
+    static std::string makeTypeName() {
         int status = 0;
         std::size_t length;
         char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, &length, &status);
@@ -423,6 +424,12 @@ private:
 
         std::free(realname);
 
+        return str;
+    }
+
+    template <typename Type>
+    static std::string getTypeName() {
+        static thread_local std::string str = makeTypeName<Type>();
         return str;
     }
 
