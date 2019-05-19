@@ -40,7 +40,7 @@ public:
 
     template <typename InterfaceType, typename ImplementationType = InterfaceType, bool contextConstructor = true>
     void provide() {
-        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::provide: " + getTypeName<InterfaceType>() + ", " + getTypeName<ImplementationType>());
+        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::provide<" + getTypeName<InterfaceType>() + ", " + getTypeName<ImplementationType>() + ">()");
 
         ClassEntry entry;
         entry.template prepareManagedInstance<InterfaceType, ImplementationType, contextConstructor>();
@@ -50,7 +50,7 @@ public:
 
     template <typename InterfaceType>
     void retract() {
-        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::retract: " + getTypeName<InterfaceType>());
+        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::retract<" + getTypeName<InterfaceType>() + ">()");
 
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         assert(found != classMap.end());
@@ -68,7 +68,7 @@ public:
     template <typename InterfaceType>
     void provideInstance(InterfaceType *instance) {
         assert(instance);
-        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::provideInstance: " + getTypeName<InterfaceType>());
+        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::provideInstance<" + getTypeName<InterfaceType>() + ">()");
 
         ClassEntry entry;
         entry.template setBorrowedInstance<InterfaceType>(instance);
@@ -79,7 +79,7 @@ public:
     template <typename InterfaceType>
     InterfaceType *swapInstance(InterfaceType *newInstance) {
         assert(newInstance);
-        emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::swapInstance: " + getTypeName<InterfaceType>());
+        emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::swapInstance<" + getTypeName<InterfaceType>() + ">()");
 
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         assert(found != classMap.end());
@@ -88,7 +88,7 @@ public:
 
     template <typename InterfaceType>
     InterfaceType *removeInstance() {
-        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::removeInstance: " + getTypeName<InterfaceType>());
+        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::removeInstance<" + getTypeName<InterfaceType>() + ">()");
 
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         assert(found != classMap.end());
@@ -100,7 +100,7 @@ public:
 
     template <typename InterfaceType>
     bool has() {
-        emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::has: " + getTypeName<InterfaceType>());
+        emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::has<" + getTypeName<InterfaceType>() + ">()");
 
         return classMap.find(std::type_index(typeid(InterfaceType))) != classMap.end();
     }
@@ -108,7 +108,7 @@ public:
     template <typename InterfaceType>
     InterfaceType &get() {
         // Not even trace level
-        // emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::get: " + getTypeName<InterfaceType>());
+        // emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::get<" + getTypeName<InterfaceType>());
 
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         if (found == classMap.end()) {
@@ -303,7 +303,7 @@ private:
 
         template <typename ReturnType, typename ManagedType, bool contextConstructor>
         void createStub(Context *context) {
-            context->emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::createStub: " + getTypeName<ReturnType>() + ", " + getTypeName<ManagedType>());
+            context->emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::createStub<" + getTypeName<ReturnType>() + ", " + getTypeName<ManagedType>() + ">()");
 
             assert(!managedInstance);
             assert(!returnInstance);
@@ -326,7 +326,7 @@ private:
 
         template <typename ReturnType, typename ManagedType>
         void destroyStub(Context *context) {
-            context->emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::destroyStub: " + getTypeName<ReturnType>() + ", " + getTypeName<ManagedType>());
+            context->emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::destroyStub<" + getTypeName<ReturnType>() + ", " + getTypeName<ManagedType>() + ">()");
 
             delete static_cast<const ManagedType *>(managedInstance);
             returnInstance = 0;
@@ -334,12 +334,12 @@ private:
         }
 
         void createBorrowedInstanceError(Context *context) {
-            context->emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::createBorrowedInstanceError");
+            context->emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::createBorrowedInstanceError()");
             assert(false);
         }
 
         void doubleCreateError(Context *context) {
-            context->emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::doubleCreateError: This is probably because you have a circular dependency");
+            context->emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::doubleCreateError() - This is probably because you have a circular dependency");
             assert(false);
         }
 
