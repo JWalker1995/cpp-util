@@ -9,37 +9,45 @@ namespace jw_util {
 template <typename ContextType>
 class ContextBuilder {
 public:
-    template <typename InterfaceType, typename ImplementationType = InterfaceType>
+    template <typename Type>
     int registerConstructor() {
-        constructors.push_back(&construct<InterfaceType, ImplementationType>);
+        getters.push_back(&getter<Type>);
         return 0;
     }
 
-    template <typename InterfaceType, typename ImplementationType = InterfaceType>
-    void retract() {
-        typename std::vector<void (*)(ContextType &context)>::iterator pos = std::find(constructors.begin(), constructors.end(), &construct<InterfaceType, ImplementationType>);
-        assert(pos != constructors.end());
-        constructors.erase(pos);
+    template <typename Type>
+    void removeConstructor() {
+        typename std::vector<void (*)(ContextType &context)>::iterator pos = std::find(getters.begin(), getters.end(), &getter<Type>);
+        assert(pos != getters.end());
+
+        // Can't erase it here because we could be iterating
+        *pos = &noop;
     }
 
     void buildAll(ContextType &context) {
-        typename std::vector<void (*)(ContextType &context)>::const_iterator i = constructors.cbegin();
-        while (i != constructors.cend()) {
-            (**i)(context);
-            i++;
+        // Remove any noops
+        getters.erase(std::remove(getters.begin(), getters.end(), &noop), getters.end());
+
+        // Can't use an iterator here because one of the calls could register another constructor
+        for (std::size_t i = 0; i < getters.size(); i++) {
+            (*getters[i])(context);
         }
     }
 
     std::size_t getSize() const {
-        return constructors.size();
+        return getters.size() - std::count(getters.cbegin(), getters.cend(), &noop);
     }
 
 private:
-    std::vector<void (*)(ContextType &context)> constructors;
+    std::vector<void (*)(ContextType &context)> getters;
 
-    template <typename InterfaceType, typename ImplementationType>
-    static void construct(ContextType &context) {
-        context.template construct<InterfaceType, ImplementationType>();
+    template <typename Type>
+    static void getter(ContextType &context) {
+        context.template get<Type>();
+    }
+
+    static void noop(ContextType &context) {
+        (void) context;
     }
 };
 
