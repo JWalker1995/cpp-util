@@ -38,33 +38,6 @@ public:
     Context& operator=(Context&&) = delete;
 
 
-    template <typename InterfaceType, typename ImplementationType = InterfaceType, bool contextConstructor = true>
-    void provide() {
-        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::provide<" + getTypeName<InterfaceType>() + ", " + getTypeName<ImplementationType>() + ">()");
-
-        ClassEntry entry;
-        entry.template prepareManagedInstance<InterfaceType, ImplementationType, contextConstructor>();
-        auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), entry);
-        assert(inserted.second);
-    }
-
-    template <typename InterfaceType>
-    void retract() {
-        emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::retract<" + getTypeName<InterfaceType>() + ">()");
-
-        auto found = classMap.find(std::type_index(typeid(InterfaceType)));
-        assert(found != classMap.end());
-
-        auto found2 = std::find(classOrder.cbegin(), classOrder.cend(), &found->second);
-        assert(found2 != classOrder.cend());
-
-        classOrder.erase(found2);
-
-        found->second.release(this);
-        classMap.erase(found);
-    }
-
-
     template <typename InterfaceType>
     void provideInstance(InterfaceType *instance) {
         assert(instance);
@@ -105,41 +78,25 @@ public:
         return classMap.find(std::type_index(typeid(InterfaceType))) != classMap.end();
     }
 
+    template <typename InterfaceType, typename ImplementationType = InterfaceType, typename... ArgTypes>
+    InterfaceType &construct(ArgTypes... args) {
+        emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::construct<" + getTypeName<InterfaceType>() + ", " + getTypeName<ImplementationType>() + ">()");
+
+        auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), ClassEntry());
+        assert(inserted.second);
+
+        inserted.first->second.template createManagedInstance<InterfaceType, ImplementationType, ArgTypes...>(this, std::forward<ArgTypes>(args)...);
+        classOrder.push_back(&inserted.first->second);
+
+        return *inserted.first->second.template getInstance<InterfaceType>();
+    }
+
     template <typename InterfaceType>
     InterfaceType &get() {
         // Not even trace level
-        // emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::get<" + getTypeName<InterfaceType>());
+        // emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::get<" + getTypeName<InterfaceType>() + ">()");
 
-        auto found = classMap.find(std::type_index(typeid(InterfaceType)));
-        if (found == classMap.end()) {
-            emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::get: Cannot find any provided type with interface " + getTypeName<InterfaceType>());
-            assert(false);
-
-            /*
-            // Maybe the type is registered/inserted by a class that hasn't been instantiated yet
-            createSomething();
-            return get<InterfaceType>();
-            */
-        }
-        if (!found->second.hasInstance()) {
-            found->second.createManagedInstance(this);
-            classOrder.push_back(&found->second);
-        }
-        return *found->second.template getInstance<InterfaceType>();
-    }
-
-    void createAll() {
-        unsigned int size = classMap.size();
-
-        typename std::unordered_map<std::type_index, ClassEntry>::iterator i = classMap.begin();
-        while (i != classMap.end()) {
-            if (!i->second.hasInstance()) {
-                i->second.createManagedInstance(this);
-                classOrder.push_back(&i->second);
-                assert(classMap.size() == size);
-            }
-            i++;
-        }
+        return internalGet<InterfaceType>(0);
     }
 
     unsigned int getManagedTypeCount() const {
@@ -217,7 +174,6 @@ private:
 
         template <typename ClassType>
         void setBorrowedInstance(ClassType *instance) {
-            assert(!createPtr);
             assert(!returnInstance);
             assert(!managedInstance);
             assert(!destroyPtr);
@@ -227,7 +183,6 @@ private:
             setBorrowedCount++;
 #endif
 
-            createPtr = &ClassEntry::createBorrowedInstanceError;
             returnInstance = static_cast<const void *>(instance);
             managedInstance = 0;
             isConst = std::is_const<ClassType>::value;
@@ -236,7 +191,6 @@ private:
 
         template <typename ClassType>
         ClassType *swapBorrowedInstance(ClassType *newInstance) {
-            assert(createPtr == &ClassEntry::createBorrowedInstanceError);
             assert(returnInstance);
             assert(!managedInstance);
             assert(isConst == std::is_const<ClassType>::value);
@@ -251,38 +205,26 @@ private:
             return res;
         }
 
-        template <typename ReturnType, typename ManagedType, bool contextConstructor>
-        void prepareManagedInstance() {
-            assert(!createPtr);
+        template <typename ReturnType, typename ManagedType, typename... ArgTypes>
+        void createManagedInstance(Context *context, ArgTypes... args) {
             assert(!returnInstance);
             assert(!managedInstance);
-            assert(!destroyPtr);
-
-#if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
-            typeName = getTypeName<ReturnType>();
-            prepareManagedCount++;
-#endif
-
-            createPtr = &ClassEntry::createStub<ReturnType, ManagedType, contextConstructor>;
-            destroyPtr = &ClassEntry::destroyStub<ReturnType, ManagedType>;
-        }
-
-        void createManagedInstance(Context *context) {
-            assert(createPtr);
-            assert(!returnInstance);
-            assert(!managedInstance);
-            assert(destroyPtr);
+            assert(!destroyPtr && "If this fails, you probably have a circular dependency");
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
             createManagedCount++;
 #endif
 
-            (this->*createPtr)(context);
-            createPtr = 0;
+            destroyPtr = &ClassEntry::destroyStub<ReturnType, ManagedType>;
+            ManagedType *instance = new ManagedType(*static_cast<DerivedType *>(context), std::forward<ArgTypes>(args)...);
+            returnInstance = static_cast<const ReturnType *>(instance);
+            managedInstance = static_cast<const void *>(instance);
+            isConst = std::is_const<ManagedType>::value;
         }
 
         void release(Context *context) {
             (this->*destroyPtr)(context);
+            destroyPtr = 0;
         }
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
@@ -295,34 +237,10 @@ private:
 #endif
 
     private:
-        void (ClassEntry::*createPtr)(Context *context) = 0;
         void (ClassEntry::*destroyPtr)(Context *context) = 0;
         const void *returnInstance = 0;
         const void *managedInstance = 0;
         bool isConst;
-
-        template <typename ReturnType, typename ManagedType, bool contextConstructor>
-        void createStub(Context *context) {
-            context->emitLog(LogLevel::Info, getTypeName<DerivedType>() + "::createStub<" + getTypeName<ReturnType>() + ", " + getTypeName<ManagedType>() + ">()");
-
-            assert(!managedInstance);
-            assert(!returnInstance);
-            createPtr = &ClassEntry::doubleCreateError;
-            ManagedType *instance = construct<ManagedType, contextConstructor>(context);
-            returnInstance = static_cast<const ReturnType *>(instance);
-            managedInstance = static_cast<const void *>(instance);
-            isConst = std::is_const<ManagedType>::value;
-        }
-
-        template <typename ManagedType, bool contextConstructor>
-        static typename std::enable_if<contextConstructor, ManagedType *>::type construct(Context *context) {
-            return new ManagedType(*static_cast<DerivedType *>(context));
-        }
-
-        template <typename ManagedType, bool contextConstructor>
-        static typename std::enable_if<!contextConstructor, ManagedType *>::type construct(Context *context) {
-            return new ManagedType();
-        }
 
         template <typename ReturnType, typename ManagedType>
         void destroyStub(Context *context) {
@@ -333,20 +251,32 @@ private:
             managedInstance = 0;
         }
 
-        void createBorrowedInstanceError(Context *context) {
-            context->emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::createBorrowedInstanceError()");
-            assert(false);
-        }
-
-        void doubleCreateError(Context *context) {
-            context->emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::doubleCreateError() - This is probably because you have a circular dependency");
-            assert(false);
-        }
-
         void noop(Context *context) {
             (void) context;
         }
     };
+
+    template <typename InterfaceType, typename = decltype(InterfaceType(std::declval<DerivedType &>()))>
+    InterfaceType &internalGet(int) {
+        auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), ClassEntry());
+        if (inserted.second) {
+            inserted.first->second.template createManagedInstance<InterfaceType, InterfaceType>(this);
+            classOrder.push_back(&inserted.first->second);
+        }
+
+        return *inserted.first->second.template getInstance<InterfaceType>();
+    }
+
+    template <typename InterfaceType>
+    InterfaceType &internalGet(...) {
+        auto found = classMap.find(std::type_index(typeid(InterfaceType)));
+        if (found == classMap.cend()) {
+            emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::get: Cannot find non-constructible type " + getTypeName<InterfaceType>());
+            assert(false);
+        }
+
+        return *found->second.template getInstance<InterfaceType>();
+    }
 
     void runDestructors() {
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
