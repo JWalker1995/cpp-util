@@ -10,9 +10,13 @@ template <typename ContextType>
 class ContextBuilder {
 public:
     template <typename Type>
-    int registerConstructor() {
+    void registerConstructor() {
+#ifndef NDEBUG
+        typename std::vector<void (*)(ContextType &context)>::const_iterator pos = std::find(getters.cbegin(), getters.cend(), &getter<Type>);
+        assert(pos == getters.cend());
+#endif
+
         getters.push_back(&getter<Type>);
-        return 0;
     }
 
     template <typename Type>
