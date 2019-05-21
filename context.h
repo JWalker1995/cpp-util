@@ -73,7 +73,8 @@ public:
 
     template <typename InterfaceType>
     bool has() {
-        emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::has<" + getTypeName<InterfaceType>() + ">()");
+        // Not even trace level
+        // emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::has<" + getTypeName<InterfaceType>() + ">()");
 
         return classMap.find(std::type_index(typeid(InterfaceType))) != classMap.end();
     }
