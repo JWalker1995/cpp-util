@@ -92,6 +92,20 @@ public:
         return *inserted.first->second.template getInstance<InterfaceType>();
     }
 
+    template <typename InterfaceType, typename ImplementationType = InterfaceType, typename... ArgTypes>
+    InterfaceType &tryConstruct(ArgTypes... args) {
+        emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::tryConstruct<" + getTypeName<InterfaceType>() + ", " + getTypeName<ImplementationType>() + ">()");
+
+        auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), ClassEntry());
+
+        if (inserted.second) {
+            inserted.first->second.template createManagedInstance<InterfaceType, ImplementationType, ArgTypes...>(this, std::forward<ArgTypes>(args)...);
+            classOrder.push_back(&inserted.first->second);
+        }
+
+        return *inserted.first->second.template getInstance<InterfaceType>();
+    }
+
     template <typename InterfaceType>
     InterfaceType &get() {
         // Not even trace level
@@ -106,6 +120,16 @@ public:
 
     unsigned int getTotalTypeCount() const {
         return classMap.size();
+    }
+
+    std::vector<std::string> getTypeNames() const {
+        std::vector<std::string> res(classMap.size());
+        typename std::unordered_map<std::type_index, ClassEntry>::const_iterator i = classMap.cbegin();
+        while (i != classMap.cend()) {
+            res.push_back(makeTypeName(i->first));
+            i++;
+        }
+        return res;
     }
 
     /*
@@ -344,11 +368,10 @@ private:
         static_cast<DerivedType *>(this)->log(level, msg);
     }
 
-    template <typename Type>
-    static std::string makeTypeName() {
+    static std::string makeTypeName(std::type_index typeId) {
         int status = 0;
         std::size_t length;
-        char *realname = abi::__cxa_demangle(typeid(Type).name(), 0, &length, &status);
+        char *realname = abi::__cxa_demangle(typeId.name(), 0, &length, &status);
         assert(status == 0);
 
         std::string str(realname, length - 1);
@@ -360,7 +383,7 @@ private:
 
     template <typename Type>
     static std::string getTypeName() {
-        static thread_local std::string str = makeTypeName<Type>();
+        static thread_local std::string str = makeTypeName(typeid(Type));
         return str;
     }
 
