@@ -93,25 +93,11 @@ public:
     }
 
     template <typename InterfaceType, typename ImplementationType = InterfaceType, typename... ArgTypes>
-    InterfaceType &tryConstruct(ArgTypes... args) {
-        emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::tryConstruct<" + getTypeName<InterfaceType>() + ", " + getTypeName<ImplementationType>() + ">()");
-
-        auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), ClassEntry());
-
-        if (inserted.second) {
-            inserted.first->second.template createManagedInstance<InterfaceType, ImplementationType, ArgTypes...>(this, std::forward<ArgTypes>(args)...);
-            classOrder.push_back(&inserted.first->second);
-        }
-
-        return *inserted.first->second.template getInstance<InterfaceType>();
-    }
-
-    template <typename InterfaceType>
-    InterfaceType &get() {
+    InterfaceType &get(ArgTypes... args) {
         // Not even trace level
         // emitLog(LogLevel::Trace, getTypeName<DerivedType>() + "::get<" + getTypeName<InterfaceType>() + ">()");
 
-        return internalGet<InterfaceType>(0);
+        return internalGet<InterfaceType, ImplementationType, ArgTypes...>(0, std::forward<ArgTypes>(args)...);
     }
 
     unsigned int getManagedTypeCount() const {
@@ -250,6 +236,7 @@ private:
         void release(Context *context) {
             (this->*destroyPtr)(context);
             destroyPtr = 0;
+            returnInstance = 0;
         }
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
@@ -281,19 +268,21 @@ private:
         }
     };
 
-    template <typename InterfaceType, typename = decltype(InterfaceType(std::declval<DerivedType &>()))>
-    InterfaceType &internalGet(int) {
+    template <typename InterfaceType, typename ImplementationType, typename... ArgTypes, typename = decltype(ImplementationType(std::declval<DerivedType &>(), std::declval<ArgTypes>()...))>
+    InterfaceType &internalGet(int, ArgTypes... args) {
         auto inserted = classMap.emplace(std::type_index(typeid(InterfaceType)), ClassEntry());
         if (inserted.second) {
-            inserted.first->second.template createManagedInstance<InterfaceType, InterfaceType>(this);
+            inserted.first->second.template createManagedInstance<InterfaceType, ImplementationType, ArgTypes...>(this, std::forward<ArgTypes>(args)...);
             classOrder.push_back(&inserted.first->second);
         }
 
         return *inserted.first->second.template getInstance<InterfaceType>();
     }
 
-    template <typename InterfaceType>
+    template <typename InterfaceType, typename ImplementationType>
     InterfaceType &internalGet(...) {
+        static_assert(std::is_same<InterfaceType, ImplementationType>::value, "Supplied an ImplementationType to Context::get, but it is not constructible with those arguments");
+
         auto found = classMap.find(std::type_index(typeid(InterfaceType)));
         if (found == classMap.cend()) {
             emitLog(LogLevel::Error, getTypeName<DerivedType>() + "::get: Cannot find non-constructible type " + getTypeName<InterfaceType>());
