@@ -109,7 +109,8 @@ public:
     }
 
     std::vector<std::string> getTypeNames() const {
-        std::vector<std::string> res(classMap.size());
+        std::vector<std::string> res;
+        res.reserve(classMap.size());
         typename std::unordered_map<std::type_index, ClassEntry>::const_iterator i = classMap.cbegin();
         while (i != classMap.cend()) {
             res.push_back(makeTypeName(i->first));
