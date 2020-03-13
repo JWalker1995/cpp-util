@@ -174,7 +174,7 @@ private:
 
         template <typename ClassType>
         ClassType *getInstance() const {
-            assert(returnInstance);
+            assert(returnInstance && "If this fails, you probably have a circular dependency");
             assert(std::is_const<ClassType>::value || !isConst);
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
@@ -221,7 +221,7 @@ private:
         void createManagedInstance(Context *context, ArgTypes... args) {
             assert(!returnInstance);
             assert(!managedInstance);
-            assert(!destroyPtr && "If this fails, you probably have a circular dependency");
+            assert(!destroyPtr);
 
 #if JWUTIL_CONTEXT_ENABLE_STRUCT_GENERATION
             createManagedCount++;
